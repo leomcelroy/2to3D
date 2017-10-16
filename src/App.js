@@ -68,28 +68,52 @@ class DrawArea extends React.Component {
   }
 
   handleMouseDown(mouseEvent) {
-    // console.log("mouse down!");
-    if (mouseEvent.button !== 0) {
-      return;
-    }
+    // console.log(this.state.lines);
+    // // console.log("mouse down!");
+    // if (mouseEvent.button !== 0) {
+    //   return;
+    // }
+    //
+    // const point = this.relativeCoordinatesForEvent(mouseEvent);
+    // console.log("down: ", point);
+    //
+    // let oldState = this.state.lines;
+    //
+    // // console.log("old: ", oldState);
+    // oldState.push([point]);
+    // //console.log(oldState);
+    //
+    // let newState = oldState;
+    //
+    // // console.log("new: ", newState)
+    //
+    // this.setState({
+    //     lines: newState,
+    //     isDrawing: true,
+    // });
 
     const point = this.relativeCoordinatesForEvent(mouseEvent);
-    // console.log("down: ", point);
 
-    let oldState = this.state.lines;
+    // console.log(point);
+    // console.log(this.state.lines);
+    // console.log(this.state.p1);
+    // console.log(this.state.isDrawing);
 
-    // console.log("old: ", oldState);
-    oldState.push([point]);
-    //console.log(oldState);
-
-    let newState = oldState;
-
-    // console.log("new: ", newState)
-
-    this.setState({
-        lines: newState,
+    if (this.state.isDrawing) {
+      this.setState({
+        isDrawing: false
+      });
+    } else {
+      let oldLines = this.state.lines;
+      oldLines.push([point, point]);
+      let newLines = oldLines.slice(0, oldLines.length);
+      console.log(oldLines);
+      console.log(newLines);
+      this.setState({
+        lines: oldLines,
         isDrawing: true,
-    });
+      });
+    }
   }
 
   relativeCoordinatesForEvent(mouseEvent) {
@@ -111,11 +135,10 @@ class DrawArea extends React.Component {
     let oldState = this.state.lines;
 
     // console.log("old: ", oldState);
-    let lastLine = oldState[oldState.length - 1];
+    let lastLine = oldState.pop();
+    lastLine[1] = point;
 
-    lastLine.push(point);
-
-    let temp = oldState.slice(0,oldState.length - 1)
+    let temp = oldState.slice(0,oldState.length)
     temp.push(lastLine);
 
     let newState = temp;
@@ -136,7 +159,7 @@ class DrawArea extends React.Component {
   }
 
   handleMouseUp() {
-    this.setState({ isDrawing: false });
+    //othis.setState({ isDrawing: false });
   }
 
   render() {
