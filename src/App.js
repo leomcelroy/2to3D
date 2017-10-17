@@ -1,19 +1,19 @@
 //adopted some from https://pspdfkit.com/blog/2017/how-to-build-free-hand-drawing-using-react/
 
 import React, { Component } from 'react';
-import makerjs from 'makerjs';
+// import makerjs from 'makerjs';
 
-let line = {
-  type: 'line',
-  origin: [10, 10],
-  end: [50, 50]
-};
+// let line = {
+//   type: 'line',
+//   origin: [10, 10],
+//   end: [50, 50]
+// };
+//
+// let svg = makerjs.exporter.toSVG(line);
 
-let svg = makerjs.exporter.toSVG(line);
-
-let canvasStyle = {
-  border: "1px solid red"
-}
+// let canvasStyle = {
+//   border: "1px solid red"
+// }
 
 class DrawingLine extends React.Component {
 
@@ -60,6 +60,7 @@ class DrawArea extends React.Component {
     super();
     this.state = {
       isDrawing: false,
+      tool: undefined,
       lines: [], //will be a list of lists
     };
     this.handleMouseDown = this.handleMouseDown.bind(this);
@@ -69,7 +70,7 @@ class DrawArea extends React.Component {
 
   handleMouseDown(mouseEvent) {
     // console.log("mouse down!");
-    if (mouseEvent.button !== 0) {
+    if (mouseEvent.button !== 0 || this.state.tool === undefined) {
       return;
     }
 
@@ -101,7 +102,7 @@ class DrawArea extends React.Component {
   }
 
   handleMouseMove(mouseEvent) {
-    if (!this.state.isDrawing) {
+    if (!this.state.isDrawing || this.state.tool !== "FREEHAND") {
       return;
     }
 
@@ -127,6 +128,18 @@ class DrawArea extends React.Component {
     });
   }
 
+  onClickFreeHand() {
+    this.setState({
+        tool: "FREEHAND",
+    });
+  }
+
+  onClickNoTool() {
+    this.setState({
+        tool: undefined,
+    });
+  }
+
   componentDidMount() {
     document.addEventListener("mouseup", this.handleMouseUp);
   }
@@ -142,21 +155,33 @@ class DrawArea extends React.Component {
   render() {
     // console.log("drawing: ", this.state.isDrawing);
     // console.log("state: ",this.state.lines);
-    let style = {
+    let drawAreaStyle = {
       width: "400px",
       height: "400px",
       border: "1px solid black",
       float: "left",
       cursor: "crosshair",
     }
+
+    let activeButtonStyle = {
+      backgroundColor: "Yellow"
+    }
+
+    let inactiveButtonStyle = {
+    }
+
     return (
-      <div
-        style={style}
-        ref="drawArea"
-        onMouseDown={this.handleMouseDown}
-        onMouseMove={this.handleMouseMove}
-      >
-        <Drawing lines={this.state.lines} />
+      <div>
+      <button style={this.state.tool === "FREEHAND" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickFreeHand(e)}>Free Hand</button>
+      <button style={this.state.tool === undefined ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickNoTool(e)}>No Tool</button>
+        <div
+          style={drawAreaStyle}
+          ref="drawArea"
+          onMouseDown={this.handleMouseDown}
+          onMouseMove={this.handleMouseMove}
+        >
+          <Drawing lines={this.state.lines} />
+        </div>
       </div>
     );
   }
@@ -164,12 +189,12 @@ class DrawArea extends React.Component {
 
 class App extends Component {
   render() {
+    // <canvas style={canvasStyle} width="490" height="220">
+    //   {document.write(svg)}
+    // </canvas>
 
     return (
       <div>
-        <canvas style={canvasStyle} width="490" height="220">
-          {document.write(svg)}
-        </canvas>
         <DrawArea/>
       </div>
     );
