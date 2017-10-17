@@ -15,6 +15,8 @@ import React, { Component } from 'react';
 //   border: "1px solid red"
 // }
 
+const LOCK_DISTANCE = 7;
+
 class DrawingLine extends React.Component {
 
   render() {
@@ -62,6 +64,7 @@ class DrawArea extends React.Component {
       isDrawing: false,
       tool: undefined,
       lines: [], //will be a list of lists
+      start: undefined,
     };
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -73,8 +76,18 @@ class DrawArea extends React.Component {
     if (mouseEvent.button !== 0) {
       return;
     }
-console.log(this.state.tool);
-    const point = this.relativeCoordinatesForEvent(mouseEvent);
+    var point = this.relativeCoordinatesForEvent(mouseEvent);
+    if (this.state.tool === "POLYGON"
+        && this.state.start
+        && this.distanceSquared(point, this.state.start) < LOCK_DISTANCE**2 ) {
+      point = this.state.start;
+    }
+    console.log(this.state.isDrawing);
+    if (!this.state.isDrawing) {
+      this.setState({
+        start: point
+      });
+    }
 
     switch (this.state.tool) {
       case "FREEHAND":
@@ -95,7 +108,7 @@ console.log(this.state.tool);
         break;
       case "LINE":  //fallthrough
       case "POLYGON":
-        if (this.state.isDrawing && this.state.tool == "LINE") {
+        if (this.state.isDrawing && this.state.tool === "LINE") {
           this.setState({
             isDrawing: false
           });
@@ -107,7 +120,7 @@ console.log(this.state.tool);
           console.log(newLines);
           this.setState({
             lines: oldLines,
-            isDrawing: true,
+            isDrawing: point !== this.state.start,  //stop drawing if polygon is complete
           });
         }
         break;
@@ -116,6 +129,10 @@ console.log(this.state.tool);
     }
 
 
+  }
+
+  distanceSquared(p1, p2) {
+    return (p1.x - p2.x)**2 + (p1.y - p2.y)**2;
   }
 
   relativeCoordinatesForEvent(mouseEvent) {
@@ -131,7 +148,12 @@ console.log(this.state.tool);
       return;
     }
 
-    const point = this.relativeCoordinatesForEvent(mouseEvent);
+    var point = this.relativeCoordinatesForEvent(mouseEvent);
+    if (this.state.tool === "POLYGON"
+        && this.state.start
+        && this.distanceSquared(point, this.state.start) < LOCK_DISTANCE**2 ) {
+      point = this.state.start;
+    }
     let oldState = this.state.lines;
     switch (this.state.tool) {
       case "LINE": //fallthrough
