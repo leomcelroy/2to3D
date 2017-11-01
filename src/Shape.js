@@ -8,12 +8,18 @@ function Line(p1, p2) {
     shape_ : 'line',
     p1_: p1,
     p2_: p2,
+    pointSelectDistance_ : 15, //todo: setter / getter
+    lineSelectDistance_ : 14,
   };
   line.p1 = function(p) { if (p){ this.p1_ = p; return this;} return this.p1_};
   line.p2 = function(p) { if (p){ this.p2_ = p; return this;} return this.p2_};
   line.toLine = function() { return [this.p1_, this.p2_] };
   line.toLines = function() { return [[this.p1_, this.p2_]] };
-  line.selectedObjectAt = function(point) { return undefined; } //TODO: IMPLEMENT
+  line.selectedObjectAt = function(point) {
+    if (distanceSquared(point, this.p1_) < this.pointSelectDistance_**2) { return this.p1_; }
+    if (distanceSquared(point, this.p2_) < this.pointSelectDistance_**2) { return this.p2_; }
+    if (onLine(point, this.p1_, this.p2_, this.pointSelectDistance_)) { return this; }
+  }
   //TODO: ADD OTHER METHODS
   return line;
 }
@@ -71,8 +77,7 @@ function Polygon(point) {
     for (var i=0; i < this.points_.length-1; i++) {
       let d1 = distanceSquared(point, this.points_[i]);
       let d2 = distanceSquared(point, this.points_[i+1]);
-      if (Math.sqrt(d1) + Math.sqrt(d2) <
-          Math.sqrt(distanceSquared(this.points_[i], this.points_[i+1])) + this.lineSelectDistance_) {
+      if (onLine(point, this.points_[i], this.points_[i+1], this.lineSelectDistance_)) {
         return Line(this.points_[i], this.points_[i+1]);
       }
     }
@@ -80,6 +85,12 @@ function Polygon(point) {
 
   return polygon;
 } //end Polygon()
+
+function onLine(point, p1, p2, buffer) {
+  let d1 = distanceSquared(point, p1);
+  let d2 = distanceSquared(point, p2);
+  return Math.sqrt(d1) + Math.sqrt(d2) < Math.sqrt(distanceSquared(p1, p2)) + buffer
+}
 
 function LineAngleConstraint(line, angle) { //a quick example?
 
