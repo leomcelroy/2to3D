@@ -1,7 +1,7 @@
 //adopted some from https://pspdfkit.com/blog/2017/how-to-build-free-hand-drawing-using-react/
 
 import React, { Component } from 'react';
-import {Line} from './Shape.js';
+import {Line, Polygon} from './Shape.js';
 // import makerjs from 'makerjs';
 
 // let line = {
@@ -39,13 +39,11 @@ class DrawingLine extends React.Component {
 class Drawing extends React.Component {
 
   render() {
-    let lineArray = this.props.lines;
     let shapeArray = this.props.shapes;
-    console.log("lineArray:", lineArray);
-    console.log("shapeArray:", shapeArray);
-    if (shapeArray[0]) console.log("0 to svg", shapeArray[0].toSVG())
-    let newLinAr = shapeArray.map( (s) => {return s.toSVG();})
-    console.log('created linearr', newLinAr);
+    let lineArray = [];
+    shapeArray.forEach((shape) => {
+      lineArray = lineArray.concat(shape.toLines());
+    });
 
     let style = {
       width: "100%",
@@ -84,62 +82,87 @@ class DrawArea extends React.Component {
       return;
     }
     var point = this.relativeCoordinatesForEvent(mouseEvent);
-    if (this.state.tool === "POLYGON"
-        && this.state.start
-        && this.distanceSquared(point, this.state.start) < LOCK_DISTANCE**2 ) {
-      point = this.state.start;
-    }
-    console.log(this.state.isDrawing);
-    if (!this.state.isDrawing) {
-      this.setState({
-        start: point
-      });
-    }
+    // if (this.state.tool === "POLYGON"
+    //     && this.state.start
+    //     && this.distanceSquared(point, this.state.start) < LOCK_DISTANCE**2 ) {
+    //   point = this.state.start;
+    // }
+    // console.log(this.state.isDrawing);
+    // if (!this.state.isDrawing) {
+    //   this.setState({
+    //     start: point
+    //   });
+    // }
+
+    let oldShapes = this.state.shapes;
 
     switch (this.state.tool) {
       case "FREEHAND":
-        let oldState = this.state.lines;
-
-        // console.log("old: ", oldState);
-        oldState.push([point]);
-        //console.log(oldState);
-
-        let newState = oldState;
-
-        // console.log("new: ", newState)
-
-        this.setState({
-            lines: newState,
-            isDrawing: true,
-        });
-        break;
+        // let oldState = this.state.lines;
+        //
+        // // console.log("old: ", oldState);
+        // oldState.push([point]);
+        // //console.log(oldState);
+        //
+        // let newState = oldState;
+        //
+        // // console.log("new: ", newState)
+        //
+        // this.setState({
+        //     lines: newState,
+        //     isDrawing: true,
+        // });
+        // break;
       case "LINE":
-        if (!this.state.isDrawing) {
-          let line = Line(point, point);
-          let oldShapes = this.state.shapes;
+        if (this.state.isDrawing) {
+          this.setState({
+            isDrawing: false
+          })
+        } else {
+          let line = Line(point);
           oldShapes.push(line);
           this.setState({
-            shapes: oldShapes
+            shapes: oldShapes,
+            isDrawing: true,
           });
           console.log("shapes", this.state.shapes);
         }
-        //fallthrough
+        break;
       case "POLYGON":
-        if (this.state.isDrawing && this.state.tool === "LINE") {
-          this.setState({
-            isDrawing: false
-          });
-        } else {
-          let oldLines = this.state.lines;
-          oldLines.push([point, point]);
-          let newLines = oldLines.slice(0, oldLines.length);
-          console.log(oldLines);
-          console.log(newLines);
-          this.setState({
-            lines: oldLines,
-            isDrawing: point !== this.state.start,  //stop drawing if polygon is complete
-          });
-        }
+          if (this.state.isDrawing) {
+            if (oldShapes[oldShapes.length -1].closed()) {
+              console.log('closed');
+              this.setState({
+                isDrawing: false,
+              });
+            } else {
+              console.log('not closed');
+              console.log(oldShapes[oldShapes.length-1].lines_.length);
+              oldShapes[oldShapes.length-1].addLine(Line(point));
+              console.log(oldShapes[oldShapes.length-1]);
+              this.setState({
+                shapes: oldShapes,
+                //isDrawing: true, //this is redundant, but i may refactor later
+              })
+            }
+          } else {
+            let polygon = Polygon(point);
+
+            oldShapes.push(polygon);
+            this.setState({
+              shapes: oldShapes,
+              isDrawing: true,
+            });
+          }
+
+
+          // let oldLines = this.state.lines;
+          // oldLines.push([point, point]);
+          // let newLines = oldLines.slice(0, oldLines.length);
+          // this.setState({
+          //   lines: oldLines,
+          //   isDrawing: point !== this.state.start,  //stop drawing if polygon is complete
+          // });
         break;
       default:
         return;
@@ -166,51 +189,40 @@ class DrawArea extends React.Component {
     }
 
     var point = this.relativeCoordinatesForEvent(mouseEvent);
-    if (this.state.tool === "POLYGON"
-        && this.state.start
-        && this.distanceSquared(point, this.state.start) < LOCK_DISTANCE**2 ) {
-      point = this.state.start;
-    }
-    let oldState = this.state.lines;
+    let oldShapes = this.state.shapes;
+
     switch (this.state.tool) {
       case "LINE":
-        let oldShapes = this.state.shapes;
+
         oldShapes[oldShapes.length - 1].p2(point); //update second point of line
+        this.setState({  //TODO: FACTOR THIS OUT OF ALL CASES?
+          shapes: oldShapes,
+        });
+      break;
+
+      case "POLYGON":
+        oldShapes[oldShapes.length -1].lastPoint(point); //update the last point of the polygon
         this.setState({
           shapes: oldShapes,
         });
-
-      //fallthrough
-      case "POLYGON":
-        var lastLine = oldState.pop();
-        lastLine[1] = point;
-
-        var temp = oldState.slice(0,oldState.length)
-        temp.push(lastLine);
-
-        var newState = temp;
-
-        this.setState({
-            lines: newState,
-        });
         break;
       case "FREEHAND":
-        // console.log("old: ", oldState);
-        var lastLine = oldState[oldState.length - 1];  //this can't be a 'let' declaration because it's defined above
-                                                      //I thought it wouldn't matter because JavaScript does everything at runtime
-                                                      //but React seems to have a compile-like phase
-        lastLine.push(point);
-
-        var temp = oldState.slice(0,oldState.length - 1)
-        temp.push(lastLine);
-
-        var newState = temp;
-
-        // console.log("new: ", newState)
-
-        this.setState({
-            lines: newState,
-        });
+        // // console.log("old: ", oldState);
+        // var lastLine = oldState[oldState.length - 1];  //this can't be a 'let' declaration because it's defined above
+        //                                               //I thought it wouldn't matter because JavaScript does everything at runtime
+        //                                               //but React seems to have a compile-like phase
+        // lastLine.push(point);
+        //
+        // var temp = oldState.slice(0,oldState.length - 1)
+        // temp.push(lastLine);
+        //
+        // var newState = temp;
+        //
+        // // console.log("new: ", newState)
+        //
+        // this.setState({
+        //     lines: newState,
+        // });
         break;
       default:
         return;
