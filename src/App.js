@@ -1,6 +1,7 @@
 //adopted some from https://pspdfkit.com/blog/2017/how-to-build-free-hand-drawing-using-react/
 
 import React, { Component } from 'react';
+import {Line} from './Shape.js';
 // import makerjs from 'makerjs';
 
 // let line = {
@@ -39,7 +40,12 @@ class Drawing extends React.Component {
 
   render() {
     let lineArray = this.props.lines;
-    //console.log("lineArray:", lineArray);
+    let shapeArray = this.props.shapes;
+    console.log("lineArray:", lineArray);
+    console.log("shapeArray:", shapeArray);
+    if (shapeArray[0]) console.log("0 to svg", shapeArray[0].toSVG())
+    let newLinAr = shapeArray.map( (s) => {return s.toSVG();})
+    console.log('created linearr', newLinAr);
 
     let style = {
       width: "100%",
@@ -65,6 +71,7 @@ class DrawArea extends React.Component {
       tool: undefined,
       lines: [], //will be a list of lists
       start: undefined,
+      shapes: [], //will be a list of shapes
     };
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -106,7 +113,17 @@ class DrawArea extends React.Component {
             isDrawing: true,
         });
         break;
-      case "LINE":  //fallthrough
+      case "LINE":
+        if (!this.state.isDrawing) {
+          let line = Line(point, point);
+          let oldShapes = this.state.shapes;
+          oldShapes.push(line);
+          this.setState({
+            shapes: oldShapes
+          });
+          console.log("shapes", this.state.shapes);
+        }
+        //fallthrough
       case "POLYGON":
         if (this.state.isDrawing && this.state.tool === "LINE") {
           this.setState({
@@ -156,7 +173,14 @@ class DrawArea extends React.Component {
     }
     let oldState = this.state.lines;
     switch (this.state.tool) {
-      case "LINE": //fallthrough
+      case "LINE":
+        let oldShapes = this.state.shapes;
+        oldShapes[oldShapes.length - 1].p2(point); //update second point of line
+        this.setState({
+          shapes: oldShapes,
+        });
+
+      //fallthrough
       case "POLYGON":
         var lastLine = oldState.pop();
         lastLine[1] = point;
@@ -271,7 +295,8 @@ class DrawArea extends React.Component {
           onMouseDown={this.handleMouseDown}
           onMouseMove={this.handleMouseMove}
         >
-          <Drawing lines={this.state.lines} />
+          <Drawing lines={this.state.lines}
+                    shapes={this.state.shapes}/>
         </div>
       </div>
     );
