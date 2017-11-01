@@ -1,11 +1,11 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "2to3D",
+  "name": "One CAD Program",
   "icons": [
     {
       "src": "favicon.ico",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/gif"
     }
   ],
   "start_url": "./index.html",
