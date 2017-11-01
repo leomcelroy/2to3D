@@ -10,9 +10,10 @@ function Line(p1, p2) {
     p2_: p2,
     pointSelectDistance_ : 15, //todo: setter / getter
     lineSelectDistance_ : 14,
+    length_: 0
   };
-  line.p1 = function(p) { if (p){ this.p1_ = p; return this;} return this.p1_};
-  line.p2 = function(p) { if (p){ this.p2_ = p; return this;} return this.p2_};
+  line.p1 = function(p) { if (p){ this.p1_ = p; this.updateLength(); return this;} return this.p1_};
+  line.p2 = function(p) { if (p){ this.p2_ = p; this.updateLength(); return this;} return this.p2_};
   line.toLine = function() { return [this.p1_, this.p2_] };
   line.toLines = function() { return [[this.p1_, this.p2_]] };
   line.selectedObjectAt = function(point) {
@@ -20,9 +21,10 @@ function Line(p1, p2) {
     if (distanceSquared(point, this.p2_) < this.pointSelectDistance_**2) { return this.p2_; }
     if (onLine(point, this.p1_, this.p2_, this.pointSelectDistance_)) { return this; }
   }
+  line.updateLength = function() { this.length_ = Math.sqrt(distanceSquared(this.p1_, this.p2_)); }
   line.length = function(len) {
     //TODO: update length when given
-    return Math.sqrt(distanceSquared(this.p1_, this.p2_));
+    return this.length_;
   }
   line.angle = function(a) {
     if (a === undefined) {
