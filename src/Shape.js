@@ -20,7 +20,17 @@ function Line(p1, p2) {
     if (distanceSquared(point, this.p2_) < this.pointSelectDistance_**2) { return this.p2_; }
     if (onLine(point, this.p1_, this.p2_, this.pointSelectDistance_)) { return this; }
   }
-  //TODO: ADD OTHER METHODS
+  line.length = function(len) {
+    //TODO: update length when given
+    return Math.sqrt(distanceSquared(this.p1_, this.p2_));
+  }
+  line.angle = function(a) {
+    if (a === undefined) {
+      return Math.atan2(this.p2_.y - this.p1_.y, this.p2_.x - this.p1_.x);
+    }
+    this.p2_.y = this.p1_.y + Math.sin(a) * this.length();
+    this.p2_.x = this.p1_.x + Math.cos(a) * this.length();
+  }
   return line;
 }
 
@@ -92,6 +102,22 @@ function onLine(point, p1, p2, buffer) {
   return Math.sqrt(d1) + Math.sqrt(d2) < Math.sqrt(distanceSquared(p1, p2)) + buffer
 }
 
+function ParallelLineConstraint(line1, line2) {
+  let constraint = {
+    line1,
+    line2,
+  }
+  constraint.satisfy = function() {
+    if (this.line1.angle() == this.line2.angle()) {
+      return false;
+    }
+    this.line2.angle(this.line1.angle());
+    return true;
+  }
+
+  return constraint
+}
+
 function LineAngleConstraint(line, angle) { //a quick example?
 
 }
@@ -140,4 +166,4 @@ function pointEqual(p1, p2) {
 // // }
 
 
-export {Line, Polygon};
+export {Line, Polygon, ParallelLineConstraint};

@@ -1,7 +1,7 @@
 //adopted some from https://pspdfkit.com/blog/2017/how-to-build-free-hand-drawing-using-react/
 
 import React, { Component } from 'react';
-import {Line, Polygon} from './Shape.js';
+import {Line, Polygon, ParallelLineConstraint} from './Shape.js';
 //import ReactDOM from 'react-dom';
 // import makerjs from 'makerjs';
 
@@ -75,6 +75,7 @@ class DrawArea extends React.Component {
       start: undefined,
       shapes: [], //will be a list of shapes
       selected: undefined, //will be whatever object is 'selected'
+      constraints: [], //list of constraint objects
     };
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -185,6 +186,7 @@ class DrawArea extends React.Component {
   }
 
   handleMouseMove(mouseEvent) {
+    this.constraintUpdate(); //TODO: MOVE THIS?
     var point = this.relativeCoordinatesForEvent(mouseEvent);
     if (!this.state.isDrawing) {
       switch (this.state.tool) {
@@ -256,8 +258,6 @@ class DrawArea extends React.Component {
       default:
         return;
     }
-
-
   }
 
   //TODO: REFACTOR ALL OF THESE INTO ONE
@@ -298,8 +298,18 @@ class DrawArea extends React.Component {
   }
 
   horizontal() { //assumes selected is a line
-    this.state.selected.p2_.y = this.state.selected.p1_.y;
+    // this.state.selected.p2_.y = this.state.selected.p1_.y;
+    this.state.selected.angle(0);
     this.setState({}); //call render
+  }
+
+  makeParallel() {
+    let oldConstraints = this.state.constraints;
+    let c = ParallelLineConstraint(this.state.shapes[this.state.shapes.length-2], this.state.shapes[this.state.shapes.length-1]);
+    oldConstraints.push(c);
+    this.setState({
+      constraints: oldConstraints,
+    });
   }
 
   componentDidMount() {
@@ -368,7 +378,20 @@ class DrawArea extends React.Component {
     }
   }
 
+  constraintUpdate() {
+    let changed = false;
+    this.state.constraints.forEach((constraint) => {
+      changed = changed || constraint.satisfy();
+    });
+    console.log('changed', changed);
+    console.log('constraints', this.state.constraints);
+    if (changed) {
+      this.setState({}); //re-render
+    }
+  }
+
   render() {
+
     // console.log("drawing: ", this.state.isDrawing);
     // console.log("state: ",this.state.lines);
     let drawAreaStyle = {
@@ -409,6 +432,7 @@ class DrawArea extends React.Component {
 
             <tr><td><button onClick={(e) => this.toZero(e)}>To Zero</button></td></tr>
             <tr><td><button onClick={(e) => this.horizontal(e)}>Horizontal</button></td></tr>
+            <tr><td><button onClick={(e) => this.makeParallel(e)}>Make Parallel</button></td></tr>
             <tr><td><button onClick={(e) => this.handleDownload(e)}>Download SVG</button></td></tr>
           </tbody>
         </table>
