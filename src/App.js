@@ -1,5 +1,3 @@
-//adopted some from https://pspdfkit.com/blog/2017/how-to-build-free-hand-drawing-using-react/
-
 import React, { Component } from 'react';
 import {Line, Polygon} from './Shape.js';
 //import ReactDOM from 'react-dom';
