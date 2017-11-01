@@ -222,22 +222,22 @@ class DrawArea extends React.Component {
         });
         break;
       case "FREEHAND":
-        // console.log("old: ", oldState);
-        var lastLine = oldState[oldState.length - 1];  //this can't be a 'let' declaration because it's defined above
-                                                      //I thought it wouldn't matter because JavaScript does everything at runtime
-                                                      //but React seems to have a compile-like phase
-        lastLine.push(point);
-
-        var temp = oldState.slice(0,oldState.length - 1)
-        temp.push(lastLine);
-
-        var newState = temp;
-
-        // console.log("new: ", newState)
-
-        this.setState({
-            lines: newState,
-        });
+        // // console.log("old: ", oldState);
+        // var lastLine = oldState[oldState.length - 1];  //this can't be a 'let' declaration because it's defined above
+        //                                               //I thought it wouldn't matter because JavaScript does everything at runtime
+        //                                               //but React seems to have a compile-like phase
+        // lastLine.push(point);
+        //
+        // var temp = oldState.slice(0,oldState.length - 1)
+        // temp.push(lastLine);
+        //
+        // var newState = temp;
+        //
+        // // console.log("new: ", newState)
+        //
+        // this.setState({
+        //     lines: newState,
+        // });
         break;
       default:
         return;
