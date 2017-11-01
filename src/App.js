@@ -137,9 +137,7 @@ class DrawArea extends React.Component {
               });
             } else {
               console.log('not closed');
-              console.log(oldShapes[oldShapes.length-1].lines_.length);
-              oldShapes[oldShapes.length-1].addLine(Line(point));
-              console.log(oldShapes[oldShapes.length-1]);
+              oldShapes[oldShapes.length-1].addPoint(point);
               this.setState({
                 shapes: oldShapes,
                 //isDrawing: true, //this is redundant, but i may refactor later

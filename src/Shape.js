@@ -18,33 +18,45 @@ function Line(p1, p2) {
 
 function Polygon(point) {
   let polygon = {
-    lines_: [],
+    points_ : [],
+    //lines_: [],
     lockDistance_ : 10,
   }
 
   if (point) {
-    polygon.lines_.push(Line(point));
+    polygon.points_.push(point);
+    polygon.points_.push(point);
   }
 
   polygon.lockDistance = function(d) { if(d){ this.lockDistance_ = d; return this} return this.lockDistance_};
-  polygon.addLine = function(line) {this.lines_.push(line); return this};
+
+  //polygon.addLine = function(line) {this.lines_.push(line); return this};
+  polygon.addPoint = function(point) {this.points_.push(point); return this;}
   polygon.toLines = function() {
-    return this.lines_.map( (line) => {return line.toLine();} );
+    let lines = []
+    for (let i = 0; i < this.points_.length -1; i++) {
+      lines.push([this.points_[i], this.points_[i+1]]);
+    }
+    return lines;
   };
-  polygon.withinLock = function(p) { return distanceSquared(this.lines_[0].p1(), p) < this.lockDistance_**2 };
+  polygon.withinLock = function(p) { return distanceSquared(this.points_[0], p) < this.lockDistance_**2 };
   polygon.lastPoint = function(p) {  //if arg is specified, sets the last point of the polygon and returns this
     if (!p) {
-      return this.lines_[this.lines_.length -1].p2();
+      return this.points_[this.points_.length -1];
     }
 
     if (this.withinLock(p)) {
-      p = {'x': this.lines_[0].p1().x, 'y': this.lines_[0].p1().y}; //create a new point so we don't get double referencing
+      p = {'x': this.points_[0].x, 'y': this.points_[0].y}; //create a new point so we don't get double referencing
     }
-    this.lines_[this.lines_.length -1].p2(p);
+    this.points_[this.points_.length -1] = p;
     return this;
   }
-  polygon.closed = function() {console.log(this.lines_); return pointEqual(this.lines_[0].p1(), this.lastPoint()) };
+  polygon.closed = function() {return pointEqual(this.points_[0], this.lastPoint()) };
   return polygon;
+}
+
+function LineAngleConstraint(line, angle) { //a quick example?
+
 }
 
 function distanceSquared(p1, p2) {
@@ -53,7 +65,6 @@ function distanceSquared(p1, p2) {
 
 function pointEqual(p1, p2) {
   let foo = p1.x === p2.x && p1.y == p2.y;
-  console.log("point equal", foo);
   return foo;
 }
 
