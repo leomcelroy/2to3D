@@ -16,7 +16,7 @@ import {Line, Polygon} from './Shape.js';
 //   border: "1px solid red"
 // }
 
-const LOCK_DISTANCE = 7;
+const SELECT_DISTANCE = 7;
 
 class DrawingLine extends React.Component {
 
@@ -70,6 +70,7 @@ class DrawArea extends React.Component {
       lines: [], //will be a list of lists
       start: undefined,
       shapes: [], //will be a list of shapes
+      selected: undefined, //will be whatever object is 'selected'
     };
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -77,23 +78,11 @@ class DrawArea extends React.Component {
   }
 
   handleMouseDown(mouseEvent) {
-    // console.log("mouse down!");
+    console.log('selected', this.state.selected);
     if (mouseEvent.button !== 0) {
       return;
     }
     var point = this.relativeCoordinatesForEvent(mouseEvent);
-    // if (this.state.tool === "POLYGON"
-    //     && this.state.start
-    //     && this.distanceSquared(point, this.state.start) < LOCK_DISTANCE**2 ) {
-    //   point = this.state.start;
-    // }
-    // console.log(this.state.isDrawing);
-    // if (!this.state.isDrawing) {
-    //   this.setState({
-    //     start: point
-    //   });
-    // }
-
     let oldShapes = this.state.shapes;
 
     switch (this.state.tool) {
@@ -152,16 +141,20 @@ class DrawArea extends React.Component {
               isDrawing: true,
             });
           }
-
-
-          // let oldLines = this.state.lines;
-          // oldLines.push([point, point]);
-          // let newLines = oldLines.slice(0, oldLines.length);
-          // this.setState({
-          //   lines: oldLines,
-          //   isDrawing: point !== this.state.start,  //stop drawing if polygon is complete
-          // });
         break;
+      case "SELECT":
+        let selected = undefined;
+        this.state.shapes.forEach((shape) => {  //todo: refactor forEach to some?
+          let obj = shape.selectedObjectAt(point);
+          if (obj) {
+            selected = obj;
+            //break
+          }
+        });
+        this.setState({
+          selected: selected,
+        })
+      break;
       default:
         return;
     }
@@ -229,6 +222,8 @@ class DrawArea extends React.Component {
 
   }
 
+  //TODO: REFACTOR ALL OF THESE INTO ONE
+
   onClickFreeHand() {
     this.setState({
         tool: "FREEHAND",
@@ -247,10 +242,21 @@ class DrawArea extends React.Component {
     });
   }
 
+  onClickSelect() {
+    this.setState({
+      tool: "SELECT",
+    });
+  }
+
   onClickNoTool() {
     this.setState({
         tool: undefined,
     });
+  }
+
+  toZero() {
+    this.state.selected.y = this.state.selected.x = 0;
+    this.setState({}); //call render
   }
 
   componentDidMount() {
@@ -298,7 +304,11 @@ class DrawArea extends React.Component {
       <button style={this.state.tool === "FREEHAND" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickFreeHand(e)}>Free Hand</button>
       <button style={this.state.tool === "LINE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickLine(e)}>Line</button>
       <button style={this.state.tool === "POLYGON" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickPolygon(e)}>Polygon</button>
+      <button style={this.state.tool === "SELECT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickSelect(e)}>Select</button>
       <button style={this.state.tool === undefined ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickNoTool(e)}>No Tool</button>
+
+      <button onClick={(e) => this.toZero(e)}>To Zero</button>
+      <button onClick={(e) => this.horizontal(e)}>Horizontal</button>
         <div
           style={drawAreaStyle}
           ref="drawArea"

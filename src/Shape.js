@@ -5,6 +5,7 @@ function Line(p1, p2) {
     p2 = p1;
   }
   let line = {
+    shape_ : 'line',
     p1_: p1,
     p2_: p2,
   };
@@ -12,15 +13,17 @@ function Line(p1, p2) {
   line.p2 = function(p) { if (p){ this.p2_ = p; return this;} return this.p2_};
   line.toLine = function() { return [this.p1_, this.p2_] };
   line.toLines = function() { return [[this.p1_, this.p2_]] };
+  line.selectedObjectAt = function(point) { return undefined; } //TODO: IMPLEMENT
   //TODO: ADD OTHER METHODS
   return line;
 }
 
 function Polygon(point) {
   let polygon = {
+    shape_ : 'polygon',
     points_ : [],
-    //lines_: [],
     lockDistance_ : 10,
+    pointSelectDistance_ : 10, //todo: setter / getter
   }
 
   if (point) {
@@ -39,7 +42,9 @@ function Polygon(point) {
     }
     return lines;
   };
+
   polygon.withinLock = function(p) { return distanceSquared(this.points_[0], p) < this.lockDistance_**2 };
+
   polygon.lastPoint = function(p) {  //if arg is specified, sets the last point of the polygon and returns this
     if (!p) {
       return this.points_[this.points_.length -1];
@@ -52,8 +57,17 @@ function Polygon(point) {
     return this;
   }
   polygon.closed = function() {return pointEqual(this.points_[0], this.lastPoint()) };
+
+  polygon.selectedObjectAt = function(point) {
+    for (var i=0; i < this.points_.length; i++) {
+      if (distanceSquared(point, this.points_[i]) < this.pointSelectDistance_**2) {
+        return this.points_[i];
+      }
+    }
+  }
+
   return polygon;
-}
+} //end Polygon()
 
 function LineAngleConstraint(line, angle) { //a quick example?
 
