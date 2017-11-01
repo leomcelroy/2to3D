@@ -82,6 +82,9 @@ class DrawArea extends React.Component {
   }
 
   handleMouseDown(mouseEvent) {
+    this.setState({
+      mousedown: true,
+    });
     if (mouseEvent.button !== 0) {
       return;
     }
@@ -156,12 +159,12 @@ class DrawArea extends React.Component {
         });
         this.setState({
           selected: selected,
-        })
+        });
+        console.log('selected', selected);
       break;
       default:
         return;
     }
- console.log('selected', this.state.selected);
 
   }
 
@@ -177,11 +180,22 @@ class DrawArea extends React.Component {
     };
   }
 
+  isPoint(shape) {
+    return shape.x !== undefined && shape.y !== undefined;
+  }
+
   handleMouseMove(mouseEvent) {
     var point = this.relativeCoordinatesForEvent(mouseEvent);
     if (!this.state.isDrawing) {
       switch (this.state.tool) {
         case "SELECT":
+          if (this.state.mousedown && this.state.selected && this.isPoint(this.state.selected)) {
+            this.state.selected.x = point.x;
+            this.state.selected.y = point.y;
+            this.setState({}); //re-render
+          }
+
+
           this.state.lines.map((line, index) => {
             var point = this.relativeCoordinatesForEvent(mouseEvent);
             let d1 = this.distanceSquared(line[0], point)**(1/2);
@@ -297,6 +311,9 @@ class DrawArea extends React.Component {
   }
 
   handleMouseUp() {
+    this.setState({
+      mousedown: false,
+    })
     switch (this.state.tool) {
       case "FREEHAND":
         this.setState({ isDrawing: false });
