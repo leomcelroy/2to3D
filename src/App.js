@@ -308,6 +308,7 @@ class DrawArea extends React.Component {
     this.setState({
       constraints: oldConstraints,
     });
+    this.constraintUpdate();
   }
 
   componentDidMount() {
@@ -381,8 +382,7 @@ class DrawArea extends React.Component {
     this.state.constraints.forEach((constraint) => {
       changed = changed || constraint.satisfy();
     });
-    console.log('changed', changed);
-    console.log('constraints', this.state.constraints);
+
     if (changed) {
       this.setState({}); //re-render
     }
