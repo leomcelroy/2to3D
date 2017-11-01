@@ -23,7 +23,8 @@ function Polygon(point) {
     shape_ : 'polygon',
     points_ : [],
     lockDistance_ : 10,
-    pointSelectDistance_ : 10, //todo: setter / getter
+    pointSelectDistance_ : 15, //todo: setter / getter
+    lineSelectDistance_ : 14,
   }
 
   if (point) {
@@ -59,9 +60,20 @@ function Polygon(point) {
   polygon.closed = function() {return pointEqual(this.points_[0], this.lastPoint()) };
 
   polygon.selectedObjectAt = function(point) {
+    //try points
     for (var i=0; i < this.points_.length; i++) {
-      if (distanceSquared(point, this.points_[i]) < this.pointSelectDistance_**2) {
+      let d1 = distanceSquared(point, this.points_[i]);
+      if (d1 < this.pointSelectDistance_**2) { console.log('point!')
         return this.points_[i];
+      }
+    }
+    //try lines
+    for (var i=0; i < this.points_.length-1; i++) {
+      let d1 = distanceSquared(point, this.points_[i]);
+      let d2 = distanceSquared(point, this.points_[i+1]);
+      if (Math.sqrt(d1) + Math.sqrt(d2) <
+          Math.sqrt(distanceSquared(this.points_[i], this.points_[i+1])) + this.lineSelectDistance_) {
+        return Line(this.points_[i], this.points_[i+1]);
       }
     }
   }

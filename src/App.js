@@ -78,7 +78,6 @@ class DrawArea extends React.Component {
   }
 
   handleMouseDown(mouseEvent) {
-    console.log('selected', this.state.selected);
     if (mouseEvent.button !== 0) {
       return;
     }
@@ -87,21 +86,7 @@ class DrawArea extends React.Component {
 
     switch (this.state.tool) {
       case "FREEHAND":
-        // let oldState = this.state.lines;
-        //
-        // // console.log("old: ", oldState);
-        // oldState.push([point]);
-        // //console.log(oldState);
-        //
-        // let newState = oldState;
-        //
-        // // console.log("new: ", newState)
-        //
-        // this.setState({
-        //     lines: newState,
-        //     isDrawing: true,
-        // });
-        // break;
+        break;
       case "LINE":
         if (this.state.isDrawing) {
           this.setState({
@@ -158,7 +143,7 @@ class DrawArea extends React.Component {
       default:
         return;
     }
-
+ console.log('selected', this.state.selected);
 
   }
 
@@ -254,8 +239,13 @@ class DrawArea extends React.Component {
     });
   }
 
-  toZero() {
+  toZero() { //assumes selected is a point
     this.state.selected.y = this.state.selected.x = 0;
+    this.setState({}); //call render
+  }
+
+  horizontal() { //assumes selected is a line
+    this.state.selected.p2_.y = this.state.selected.p1_.y;
     this.setState({}); //call render
   }
 
