@@ -393,8 +393,8 @@ class DrawArea extends React.Component {
     // console.log("drawing: ", this.state.isDrawing);
     // console.log("state: ",this.state.lines);
     let drawAreaStyle = {
-      width: "400px",
-      height: "400px",
+      width: "500px",
+      height: "500px",
       border: "1px solid black",
       float: "left",
       cursor: "crosshair",
@@ -402,10 +402,59 @@ class DrawArea extends React.Component {
     }
 
     let activeButtonStyle = {
-      backgroundColor: "Yellow"
+      borderTop: "none",
+      background: "#EBBC14",
+      padding: "4px 8px",
+      borderRadius: "8px",
+      boxShadow: "none",
+      textShadow: "none",
+      color: "#000000",
+      fontSize: "12px",
+      fontFamily: "Helvetica",
+      textDecoration: "none",
+      verticalAlign: "middle",
     }
 
     let inactiveButtonStyle = {
+      borderTop: "none",
+      background: "#add8e6",
+      padding: "4px 8px",
+      borderRadius: "8px",
+      boxShadow: "none",
+      textShadow: "none",
+      color: "#000000",
+      fontSize: "12px",
+      fontFamily: "Helvetica",
+      textDecoration: "none",
+      verticalAlign: "middle",
+    }
+
+    let defaultButtonStyle = {
+      borderTop: "none",
+      background: "#A38FDF",
+      padding: "4px 8px",
+      borderRadius: "8px",
+      boxShadow: "none",
+      textShadow: "none",
+      color: "#000000",
+      fontSize: "12px",
+      fontFamily: "Helvetica",
+      textDecoration: "none",
+      verticalAlign: "middle",
+    }
+
+    let downloadButtonStyle = {
+      borderTop: "none",
+      background: "#E6926E",
+      padding: "4px 8px",
+      borderRadius: "8px",
+      boxShadow: "none",
+      textShadow: "none",
+      color: "#000000",
+      fontSize: "12px",
+      fontFamily: "Helvetica",
+      textDecoration: "none",
+      verticalAlign: "middle",
     }
 
     return (
@@ -422,16 +471,18 @@ class DrawArea extends React.Component {
 
         <table style={{float:"left"}}>
           <tbody>
+            <tr><td><h5>Tools</h5></td></tr>
             <tr><td><button style={this.state.tool === "FREEHAND" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickFreeHand(e)}>Free Hand</button></td></tr>
             <tr><td><button style={this.state.tool === "LINE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickLine(e)}>Line</button></td></tr>
             <tr><td><button style={this.state.tool === "POLYGON" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickPolygon(e)}>Polygon</button></td></tr>
             <tr><td><button style={this.state.tool === "SELECT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickSelect(e)}>Select</button></td></tr>
             <tr><td><button style={this.state.tool === undefined ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickNoTool(e)}>No Tool</button></td></tr>
-
-            <tr><td><button onClick={(e) => this.toZero(e)}>To Zero</button></td></tr>
-            <tr><td><button onClick={(e) => this.horizontal(e)}>Horizontal</button></td></tr>
-            <tr><td><button onClick={(e) => this.makeParallel(e)}>Make Parallel</button></td></tr>
-            <tr><td><button onClick={(e) => this.handleDownload(e)}>Download SVG</button></td></tr>
+            <tr><td><h5>Constraints</h5></td></tr>
+            <tr><td><button style={defaultButtonStyle} onClick={(e) => this.toZero(e)}>To Zero</button></td></tr>
+            <tr><td><button style={defaultButtonStyle} onClick={(e) => this.horizontal(e)}>Horizontal</button></td></tr>
+            <tr><td><button style={defaultButtonStyle} onClick={(e) => this.makeParallel(e)}>Make Parallel</button></td></tr>
+            <tr><td><h5>Export</h5></td></tr>
+            <tr><td><button style={downloadButtonStyle} onClick={(e) => this.handleDownload(e)}>Download SVG</button></td></tr>
           </tbody>
         </table>
       </div>
