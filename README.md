@@ -1,6 +1,6 @@
 ## 2to3D: a user friendly parametric CAD program for Laser Cutting
 ### Leo McElroy and Ben Brown
-### CS701 Project
+### CS701 Project Proposal
 
 ### Problem Statement
 
