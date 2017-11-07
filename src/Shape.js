@@ -1,60 +1,80 @@
 //look at maker.js?
 
-function Line(p1, p2) {
-  if (!p2) {
-    p2 = p1;
+class Line {
+  constructor(p1, p2) {
+    if (!p2) {
+      p2 = p1;
+    }
+
+    this.shape_ = 'line';
+    this.p1_ = p1;
+    this.p2_ = p2;
+    this.pointSelectDistance_ = 15; //todo: setter / getter
+    this.lineSelectDistance_ = 14;
+    this.objectSelectDistance_ = 5;
+    this.length_ = 0;
+    this.selected = false;
   }
-  let line = {
-    shape_ : 'line',
-    p1_: p1,
-    p2_: p2,
-    pointSelectDistance_ : 15, //todo: setter / getter
-    lineSelectDistance_ : 14,
-    length_: 0
-  };
-  line.p1 = function(p) { if (p){ this.p1_ = p; this.updateLength(); return this;} return this.p1_};
-  line.p2 = function(p) { if (p){ this.p2_ = p; this.updateLength(); return this;} return this.p2_};
-  line.toLine = function() { return [this.p1_, this.p2_] };
-  line.toLines = function() { return [[this.p1_, this.p2_]] };
-  line.selectedObjectAt = function(point) {
+
+  p1(p) { if (p){ this.p1_ = p; this.updateLength(); return this;} return this.p1_};
+
+  p2(p) { if (p){ this.p2_ = p; this.updateLength(); return this;} return this.p2_};
+
+  toLine() { return [this.p1_, this.p2_] };
+
+  toLines() { return [[this.p1_, this.p2_]] };
+
+  selectedObjectAt(point) {
     if (distanceSquared(point, this.p1_) < this.pointSelectDistance_**2) { return this.p1_; }
     if (distanceSquared(point, this.p2_) < this.pointSelectDistance_**2) { return this.p2_; }
     if (onLine(point, this.p1_, this.p2_, this.pointSelectDistance_)) { return this; }
   }
-  line.updateLength = function() { this.length_ = Math.sqrt(distanceSquared(this.p1_, this.p2_)); }
-  line.length = function(len) {
+
+  updateLength() { this.length_ = Math.sqrt(distanceSquared(this.p1_, this.p2_)); }
+
+  length(len) {
     //TODO: update length when given
     return this.length_;
   }
-  line.angle = function(a) {
+
+  select(booleanValue) {
+    return this.selected = (!booleanValue) ? !this.selected : booleanValue;
+  }
+
+  angle(a) {
     if (a === undefined) {
       return Math.atan2(this.p2_.y - this.p1_.y, this.p2_.x - this.p1_.x);
     }
     this.p2_.y = this.p1_.y + Math.sin(a) * this.length();
     this.p2_.x = this.p1_.x + Math.cos(a) * this.length();
   }
-  return line;
+
+  shapeContains(point) {
+    return onLine(point, this.p1_, this.p2_, this.objectSelectDistance_);
+  }
 }
 
-function Polygon(point) {
-  let polygon = {
-    shape_ : 'polygon',
-    points_ : [],
-    lockDistance_ : 10,
-    pointSelectDistance_ : 15, //todo: setter / getter
-    lineSelectDistance_ : 14,
+class Polygon {
+  constructor(point) {
+    this.shape_ = 'polygon';
+    this.points_ = [];
+    this.lockDistance_ = 10;
+    this.pointSelectDistance_ = 15; //todo: setter / getter
+    this.lineSelectDistance_ = 14;
+    this.selected = false;
+
+    if (point) {
+      this.points_.push(point);
+      this.points_.push(point);
+    }
   }
 
-  if (point) {
-    polygon.points_.push(point);
-    polygon.points_.push(point);
-  }
-
-  polygon.lockDistance = function(d) { if(d){ this.lockDistance_ = d; return this} return this.lockDistance_};
+  lockDistance(d) { if(d){ this.lockDistance_ = d; return this} return this.lockDistance_};
 
   //polygon.addLine = function(line) {this.lines_.push(line); return this};
-  polygon.addPoint = function(point) {this.points_.push(point); return this;}
-  polygon.toLines = function() {
+  addPoint(point) {this.points_.push(point); return this;}
+
+  toLines() {
     let lines = []
     for (let i = 0; i < this.points_.length -1; i++) {
       lines.push([this.points_[i], this.points_[i+1]]);
@@ -62,9 +82,13 @@ function Polygon(point) {
     return lines;
   };
 
-  polygon.withinLock = function(p) { return distanceSquared(this.points_[0], p) < this.lockDistance_**2 };
+  select() {
+    return this.selected = !this.selected;
+  }
 
-  polygon.lastPoint = function(p) {  //if arg is specified, sets the last point of the polygon and returns this
+  withinLock(p) { return distanceSquared(this.points_[0], p) < this.lockDistance_**2 };
+
+  lastPoint(p) {  //if arg is specified, sets the last point of the polygon and returns this
     if (!p) {
       return this.points_[this.points_.length -1];
     }
@@ -75,14 +99,24 @@ function Polygon(point) {
     this.points_[this.points_.length -1] = p;
     return this;
   }
-  polygon.closed = function() {return pointEqual(this.points_[0], this.lastPoint()) };
 
-  polygon.selectedObjectAt = function(point) {
+  closed() {return pointEqual(this.points_[0], this.lastPoint()) };
+
+  selectedObjectAt(point) {
     //try points
     for (var i=0; i < this.points_.length; i++) {
       let d1 = distanceSquared(point, this.points_[i]);
-      if (d1 < this.pointSelectDistance_**2) { console.log('point!')
-        return this.points_[i];
+      if (d1 < this.pointSelectDistance_**2) {
+        // console.log('point!');
+        // console.log(i);
+        if (i === 0) { //this is a hack double select only works with end point for some reason
+          i = this.points_.length - 1;
+        }
+        if (i === this.points_.length-1) {
+          return [this.points_[i], this.points_[0]];
+        } else {
+          return this.points_[i];
+        }
       }
     }
     //try lines
@@ -90,12 +124,18 @@ function Polygon(point) {
       let d1 = distanceSquared(point, this.points_[i]);
       let d2 = distanceSquared(point, this.points_[i+1]);
       if (onLine(point, this.points_[i], this.points_[i+1], this.lineSelectDistance_)) {
-        return Line(this.points_[i], this.points_[i+1]);
+        return new Line(this.points_[i], this.points_[i+1]);
       }
     }
   }
 
-  return polygon;
+  shapeContains(point) {
+    let polyRawLines = this.toLines();
+    let polyLines = polyRawLines.map(line => new Line(line[0],line[1]))
+    let contained = polyLines.map(line => line.shapeContains(point));
+
+    return contained.some(entry => entry===true);
+  }
 } //end Polygon()
 
 function onLine(point, p1, p2, buffer) {

@@ -23,7 +23,7 @@ class DrawingLine extends React.Component {
     let style = {
       fill: "none",
       strokeWidth: "1px",
-      stroke: "black",
+      stroke: this.props.color,
       strokeLinejoin: "round",
       strokeLinecap: "round",
     }
@@ -40,11 +40,23 @@ class Drawing extends React.Component {
   render() {
     let shapeArray = this.props.shapes;
     let lineArray = [];
+    let lineArrayAndColor = [];
+    let color = "black";
     shapeArray.forEach((shape) => {
+      if (shape.selected === true) {
+        color = "blue";
+      } else {
+        color = "black";
+      }
       lineArray = lineArray.concat(shape.toLines());
+      lineArrayAndColor = lineArrayAndColor.concat(shape.toLines().map(entry => color));
     });
 
     lineArray = lineArray.concat(this.props.lines);
+    lineArrayAndColor = lineArrayAndColor.concat("black");
+
+    console.log(lineArray);
+    console.log(lineArrayAndColor);
 
     let style = {
       width: "100%",
@@ -52,7 +64,7 @@ class Drawing extends React.Component {
     }
     let drawing = <svg style={style}>
         {lineArray.map((line, index) => (
-          <DrawingLine key={index} line={line} />
+          <DrawingLine key={index} line={line} color={lineArrayAndColor[index]}/>
         ))}
       </svg>
 
@@ -100,7 +112,7 @@ class DrawArea extends React.Component {
 
         let newState = oldState;
 
-        console.log("new: ", newState)
+        // console.log("new: ", newState)
 
         this.setState({
             lines: newState,
@@ -113,24 +125,24 @@ class DrawArea extends React.Component {
             isDrawing: false
           })
         } else {
-          let line = Line(point);
+          let line = new Line(point);
           oldShapes.push(line);
           this.setState({
             shapes: oldShapes,
             isDrawing: true,
           });
-          console.log("shapes", this.state.shapes);
+          // console.log("shapes", this.state.shapes);
         }
         break;
       case "POLYGON":
           if (this.state.isDrawing) {
             if (oldShapes[oldShapes.length -1].closed()) {
-              console.log('closed');
+              // console.log('closed');
               this.setState({
                 isDrawing: false,
               });
             } else {
-              console.log('not closed');
+              // console.log('not closed');
               oldShapes[oldShapes.length-1].addPoint(point);
               this.setState({
                 shapes: oldShapes,
@@ -138,7 +150,7 @@ class DrawArea extends React.Component {
               })
             }
           } else {
-            let polygon = Polygon(point);
+            let polygon = new Polygon(point);
 
             oldShapes.push(polygon);
             this.setState({
@@ -147,7 +159,7 @@ class DrawArea extends React.Component {
             });
           }
         break;
-      case "SELECT":
+      case "EDIT":
         let selected = undefined;
         this.state.shapes.forEach((shape) => {  //todo: refactor forEach to some?
           let obj = shape.selectedObjectAt(point);
@@ -159,8 +171,16 @@ class DrawArea extends React.Component {
         this.setState({
           selected: selected,
         });
-        console.log('selected', selected);
-      break;
+        // console.log('selected', selected);
+        break;
+      case "SELECT":
+        selected = undefined;
+        this.state.shapes.forEach((shape) => {  //todo: refactor forEach to some?
+          if (shape.shapeContains(point)) {
+            shape.select();
+          }
+        })
+        break;
       default:
         return;
     }
@@ -179,8 +199,13 @@ class DrawArea extends React.Component {
     };
   }
 
-  isPoint(shape) {
-    return shape.x !== undefined && shape.y !== undefined;
+  isPointOrArrayOfPoints(shape) {
+    if (Array.isArray(shape)===true) {
+      let result = shape.map(point => {return point.x !== undefined && point.y !== undefined;})
+      return result.every(entry => entry===true)
+    } else {
+      return shape.x !== undefined && shape.y !== undefined;
+    }
   }
 
   handleMouseMove(mouseEvent) {
@@ -188,11 +213,20 @@ class DrawArea extends React.Component {
     var point = this.relativeCoordinatesForEvent(mouseEvent);
     if (!this.state.isDrawing) {
       switch (this.state.tool) {
-        case "SELECT":
-          if (this.state.mousedown && this.state.selected && this.isPoint(this.state.selected)) {
-            this.state.selected.x = point.x;
-            this.state.selected.y = point.y;
-            this.setState({}); //re-render
+        case "EDIT":
+          if (this.state.mousedown && this.state.selected && this.isPointOrArrayOfPoints(this.state.selected)) {
+            // console.log("input", point)
+            if (Array.isArray(this.state.selected) === false) {
+              this.state.selected.x = point.x;
+              this.state.selected.y = point.y;
+              this.setState({});
+            } else {
+              this.state.selected[0].x = point.x;
+              this.state.selected[0].y = point.y;
+              this.state.selected[1].x = point.x;
+              this.state.selected[1].y = point.y;
+              this.setState({});
+            }
           }
 
 
@@ -206,7 +240,7 @@ class DrawArea extends React.Component {
 
             //doesnt work for freehand lines
             if ((d1 + d2) < (total+1) || (d1 + d2) < (total-1)) {
-              console.log(index);
+              // console.log(index);
             }
 
           })
@@ -281,6 +315,12 @@ class DrawArea extends React.Component {
   onClickSelect() {
     this.setState({
       tool: "SELECT",
+    });
+  }
+
+  onClickEdit() {
+    this.setState({
+      tool: "EDIT",
     });
   }
 
@@ -475,6 +515,7 @@ class DrawArea extends React.Component {
             <tr><td><button style={this.state.tool === "FREEHAND" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickFreeHand(e)}>Free Hand</button></td></tr>
             <tr><td><button style={this.state.tool === "LINE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickLine(e)}>Line</button></td></tr>
             <tr><td><button style={this.state.tool === "POLYGON" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickPolygon(e)}>Polygon</button></td></tr>
+            <tr><td><button style={this.state.tool === "EDIT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickEdit(e)}>Edit</button></td></tr>
             <tr><td><button style={this.state.tool === "SELECT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickSelect(e)}>Select</button></td></tr>
             <tr><td><button style={this.state.tool === undefined ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickNoTool(e)}>No Tool</button></td></tr>
             <tr><td><h5>Constraints</h5></td></tr>
