@@ -39,6 +39,8 @@ class Drawing extends React.Component {
 
   render() {
     let shapeArray = this.props.shapes;
+    let newShapeArray = this.props.newShapes;
+    console.log(newShapeArray);
     let lineArray = [];
     let lineArrayAndColor = [];
     let color = "black";
@@ -52,11 +54,21 @@ class Drawing extends React.Component {
       lineArrayAndColor = lineArrayAndColor.concat(shape.toLines().map(entry => color));
     });
 
+    newShapeArray.forEach((shape) => {
+      if (shape.selected === true) {
+        color = "blue";
+      } else {
+        color = "black";
+      }
+      lineArray = lineArray.concat(shape.toLines());
+      lineArrayAndColor = lineArrayAndColor.concat(shape.toLines().map(entry => color));
+    });
+
     lineArray = lineArray.concat(this.props.lines);
     lineArrayAndColor = lineArrayAndColor.concat("black");
 
-    console.log(lineArray);
-    console.log(lineArrayAndColor);
+    // console.log(lineArray);
+    // console.log(lineArrayAndColor);
 
     let style = {
       width: "100%",
@@ -86,6 +98,9 @@ class DrawArea extends React.Component {
       shapes: [], //will be a list of shapes
       selected: undefined, //will be whatever object is 'selected'
       constraints: [], //list of constraint objects
+      pivotPoint: undefined,
+      originalShapes: undefined,
+      newShapes: [],
     };
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -171,15 +186,25 @@ class DrawArea extends React.Component {
         this.setState({
           selected: selected,
         });
-        // console.log('selected', selected);
+        //console.log('selected', selected);
         break;
       case "SELECT":
         selected = undefined;
-        this.state.shapes.forEach((shape) => {  //todo: refactor forEach to some?
+        this.state.shapes.forEach((shape) => {
           if (shape.shapeContains(point)) {
             shape.select();
           }
         })
+        break;
+      case "MOVE":
+        var point = this.relativeCoordinatesForEvent(mouseEvent);
+        let originalShapes = [];
+        this.state.shapes.forEach(shape => {
+          let newShape = new Polygon;
+          newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
+          originalShapes.push(newShape);
+        })
+        this.setState({pivotPoint:point, originalShapes:originalShapes});
         break;
       default:
         return;
@@ -208,6 +233,10 @@ class DrawArea extends React.Component {
     }
   }
 
+  translatePoint(point) {
+
+  }
+
   handleMouseMove(mouseEvent) {
     this.constraintUpdate(); //TODO: MOVE THIS?
     var point = this.relativeCoordinatesForEvent(mouseEvent);
@@ -221,11 +250,11 @@ class DrawArea extends React.Component {
               this.state.selected.y = point.y;
               this.setState({});
             } else {
-              this.state.selected[0].x = point.x;
-              this.state.selected[0].y = point.y;
-              this.state.selected[1].x = point.x;
-              this.state.selected[1].y = point.y;
-              this.setState({});
+              for (var i=0; i < this.state.selected.length; i++) {
+                this.state.selected[i].x = point.x;
+                this.state.selected[i].y = point.y;
+                this.setState({});
+              }
             }
           }
 
@@ -244,6 +273,29 @@ class DrawArea extends React.Component {
             }
 
           })
+          break;
+        case "MOVE":
+          if (this.state.mousedown === true) {
+            var point = this.relativeCoordinatesForEvent(mouseEvent);
+            let newShapes = [];
+
+            this.state.originalShapes.forEach((shape) => {
+              if (shape.selected) {
+                let newShape = new Polygon;
+                newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
+                let newPoints = newShape.points_.map(shapePoint => {
+                  //console.log(point.x-this.state.pivotPoint.x, point.y-this.state.pivotPoint.y)
+                  return ({x:shapePoint.x+(point.x-this.state.pivotPoint.x), y:shapePoint.y+(point.y-this.state.pivotPoint.y)}) //denomiator sets speed of movement
+                });
+                //console.log(newPoints);
+                newShape.points_ = newPoints;
+                newShapes.push(newShape);
+              }
+            });
+            this.setState({newShapes: newShapes});
+
+            //console.log(newShapes)
+          }
           break;
         default:
           return;
@@ -318,6 +370,12 @@ class DrawArea extends React.Component {
     });
   }
 
+  onClickMove() {
+    this.setState({
+      tool: "MOVE",
+    });
+  }
+
   onClickEdit() {
     this.setState({
       tool: "EDIT",
@@ -369,6 +427,16 @@ class DrawArea extends React.Component {
         break;
       case "LINE" || "POLYGON":
         //do nothing
+        break;
+      case "MOVE":
+        let unselectedShapes = [];
+        this.state.shapes.forEach(shape => {
+          if (shape.selected === false) {
+            unselectedShapes.push(shape);
+          }
+        })
+        let allShapes = this.state.newShapes.concat(unselectedShapes);
+        this.setState({shapes:allShapes});
         break;
       default:
         return;
@@ -506,7 +574,8 @@ class DrawArea extends React.Component {
           onMouseMove={this.handleMouseMove}
         >
           <Drawing lines={this.state.lines}
-                    shapes={this.state.shapes}/>
+                   shapes={this.state.shapes}
+                   newShapes={this.state.newShapes}/>
         </div>
 
         <table style={{float:"left"}}>
@@ -517,6 +586,7 @@ class DrawArea extends React.Component {
             <tr><td><button style={this.state.tool === "POLYGON" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickPolygon(e)}>Polygon</button></td></tr>
             <tr><td><button style={this.state.tool === "EDIT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickEdit(e)}>Edit</button></td></tr>
             <tr><td><button style={this.state.tool === "SELECT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickSelect(e)}>Select</button></td></tr>
+            <tr><td><button style={this.state.tool === "MOVE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickMove(e)}>Move</button></td></tr>
             <tr><td><button style={this.state.tool === undefined ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickNoTool(e)}>No Tool</button></td></tr>
             <tr><td><h5>Constraints</h5></td></tr>
             <tr><td><button style={defaultButtonStyle} onClick={(e) => this.toZero(e)}>To Zero</button></td></tr>

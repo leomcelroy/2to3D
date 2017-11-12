@@ -7,7 +7,7 @@ class Line {
     }
 
     this.shape_ = 'line';
-    this.p1_ = p1;
+    this.p1_ = p1; //lets make this into list of points to have same form as polygon
     this.p2_ = p2;
     this.pointSelectDistance_ = 15; //todo: setter / getter
     this.lineSelectDistance_ = 14;
