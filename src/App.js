@@ -515,12 +515,32 @@ class DrawArea extends React.Component {
   }
 
   handleKeyPress(e) {
-    switch (this.state.tool) {
-      case "POLYGON":
-        let code = (e.keyCode ? e.keyCode : e.which);
-        if (code === 13) { //'enter' key
-          this.setState({isDrawing:false})
+    let code = (e.keyCode ? e.keyCode : e.which);
+    console.log(code);
+    switch (code) {
+      case 13:
+        switch (this.state.tool) {
+          case "POLYGON":
+              this.setState({isDrawing:false})
+            break;
+          default:
+            return;
         }
+        break;
+      case 80:
+        this.setState({tool:"POLYGON"})
+        break;
+      case 70:
+        this.setState({tool:"FREEHAND"})
+        break;
+      case 69:
+        this.setState({tool:"EDIT"})
+        break;
+      case 83:
+        this.setState({tool:"SELECT"})
+        break;
+      case 77:
+        this.setState({tool:"MOVE"})
         break;
       default:
         return;
