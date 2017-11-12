@@ -14,6 +14,7 @@ class Line {
     this.objectSelectDistance_ = 5;
     this.length_ = 0;
     this.selected = false;
+    //this.points_ = [p1, p2];
   }
 
   p1(p) { if (p){ this.p1_ = p; this.updateLength(); return this;} return this.p1_};
@@ -54,7 +55,7 @@ class Line {
   }
 }
 
-class Polygon {
+class Polygon { //add another end capability to make polylines, remove line tool from toolbar
   constructor(point) {
     this.shape_ = 'polygon';
     this.points_ = [];
@@ -109,11 +110,13 @@ class Polygon {
       if (d1 < this.pointSelectDistance_**2) {
         // console.log('point!');
         // console.log(i);
-        if (i === 0) { //this is a hack double select only works with end point for some reason
-          i = this.points_.length - 1;
-        }
-        if (i === this.points_.length-1) {
-          return [this.points_[i], this.points_[0]];
+        if (this.closed(this)) {
+          if (i === 0) { //this is a hack double select only works with end point for some reason
+            i = this.points_.length - 1;
+          }
+          if (i === this.points_.length-1) {
+            return [this.points_[i], this.points_[0]];
+          }
         } else {
           return this.points_[i];
         }

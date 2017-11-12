@@ -40,7 +40,6 @@ class Drawing extends React.Component {
   render() {
     let shapeArray = this.props.shapes;
     let newShapeArray = this.props.newShapes;
-    console.log(newShapeArray);
     let lineArray = [];
     let lineArrayAndColor = [];
     let color = "black";
@@ -65,7 +64,10 @@ class Drawing extends React.Component {
     });
 
     lineArray = lineArray.concat(this.props.lines);
-    lineArrayAndColor = lineArrayAndColor.concat("black");
+
+    let freehandColors = this.props.lines.map(line => "black");
+
+    lineArrayAndColor = lineArrayAndColor.concat(freehandColors);
 
     // console.log(lineArray);
     // console.log(lineArrayAndColor);
@@ -105,6 +107,7 @@ class DrawArea extends React.Component {
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleMouseUp = this.handleMouseUp.bind(this);
+    //this.handleKeyPress = this.handleKeyPress.bind(this);
   }
 
   handleMouseDown(mouseEvent) {
@@ -231,10 +234,6 @@ class DrawArea extends React.Component {
     } else {
       return shape.x !== undefined && shape.y !== undefined;
     }
-  }
-
-  translatePoint(point) {
-
   }
 
   handleMouseMove(mouseEvent) {
@@ -492,7 +491,21 @@ class DrawArea extends React.Component {
     });
 
     if (changed) {
+
       this.setState({}); //re-render
+    }
+  }
+
+  handleKeyPress(e) {
+    switch (this.state.tool) {
+      case "POLYGON":
+        let code = (e.keyCode ? e.keyCode : e.which);
+        if (code === 13) { //'enter' key
+          this.setState({isDrawing:false})
+        }
+        break;
+      default:
+        return;
     }
   }
 
@@ -565,6 +578,10 @@ class DrawArea extends React.Component {
       verticalAlign: "middle",
     }
 
+
+    //let's consolidate line and polygon tool to polyline
+    //<tr><td><button style={this.state.tool === "LINE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickLine(e)}>Line</button></td></tr>
+
     return (
       <div>
         <div
@@ -572,6 +589,8 @@ class DrawArea extends React.Component {
           ref="drawArea"
           onMouseDown={this.handleMouseDown}
           onMouseMove={this.handleMouseMove}
+          onKeyDown={(e) => this.handleKeyPress(e)}
+          tabIndex="0"
         >
           <Drawing lines={this.state.lines}
                    shapes={this.state.shapes}
@@ -582,7 +601,6 @@ class DrawArea extends React.Component {
           <tbody>
             <tr><td><h5>Tools</h5></td></tr>
             <tr><td><button style={this.state.tool === "FREEHAND" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickFreeHand(e)}>Free Hand</button></td></tr>
-            <tr><td><button style={this.state.tool === "LINE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickLine(e)}>Line</button></td></tr>
             <tr><td><button style={this.state.tool === "POLYGON" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickPolygon(e)}>Polygon</button></td></tr>
             <tr><td><button style={this.state.tool === "EDIT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickEdit(e)}>Edit</button></td></tr>
             <tr><td><button style={this.state.tool === "SELECT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickSelect(e)}>Select</button></td></tr>
