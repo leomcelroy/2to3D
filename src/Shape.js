@@ -12,7 +12,7 @@ class Line {
     this.pointSelectDistance_ = 15; //todo: setter / getter
     this.lineSelectDistance_ = 14;
     this.objectSelectDistance_ = 5;
-    this.length_ = 0;
+    this.length_ = Math.sqrt(distanceSquared(this.p1_, this.p2_));
     this.selected = false;
     //this.points_ = [p1, p2];
   }
@@ -43,6 +43,7 @@ class Line {
   }
 
   angle(a) {
+    //console.log(this.length);
     if (a === undefined) {
       return Math.atan2(this.p2_.y - this.p1_.y, this.p2_.x - this.p1_.x);
     }
@@ -155,7 +156,7 @@ function ParallelLineConstraint(line1, line2) {
     line2,
   }
   constraint.satisfy = function() {
-    if (this.line1.angle() == this.line2.angle()) {
+    if (this.line1.angle() === this.line2.angle()) {
       return false;
     }
     this.line2.angle(this.line1.angle());

@@ -115,6 +115,7 @@ class DrawArea extends React.Component {
       pivotPoint: undefined,
       originalShapes: undefined,
       newShapes: [],
+      selectedLines: [],
     };
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -191,26 +192,34 @@ class DrawArea extends React.Component {
         break;
       case "EDIT":
         let selected = undefined;
+        let lines = this.state.selectedLines;
         this.state.shapes.forEach((shape) => {  //todo: refactor forEach to some?
           let obj = shape.selectedObjectAt(point);
           if (obj) {
             selected = obj;
+
+            if (selected.shape_ === "line") {
+              lines.push(selected);
+            }
             //break
           }
         });
+
         this.setState({
           selected: selected,
+          selectedLines: lines,
         });
-        //console.log('selected', selected);
+        console.log('selectedLines', this.state.selectedLines);
         break;
       case "SELECT":
         selected = undefined;
         this.state.shapes.forEach((shape) => {
           if (shape.shapeContains(point)) {
             shape.select();
+            //console.log(shape);
           }
         })
-        console.log(this.state.shapes.every(shape => shape.shapeContains(point)===false));
+        //console.log(this.state.shapes.every(shape => shape.shapeContains(point)===false));
         if (this.state.shapes.every(shape => shape.shapeContains(point)===false)) {
           this.state.shapes.forEach((shape) => {
               shape.selected = false;
@@ -412,13 +421,13 @@ class DrawArea extends React.Component {
 
   horizontal() { //assumes selected is a line
     // this.state.selected.p2_.y = this.state.selected.p1_.y;
-    this.state.selected.angle(0);
+    this.state.selectedLines[this.state.selectedLines.length-1].angle(0);
     this.setState({}); //call render
   }
 
   makeParallel() {
     let oldConstraints = this.state.constraints;
-    let c = ParallelLineConstraint(this.state.shapes[this.state.shapes.length-2], this.state.shapes[this.state.shapes.length-1]);
+    let c = ParallelLineConstraint(this.state.selectedLines[this.state.selectedLines.length-2], this.state.selectedLines[this.state.selectedLines.length-1]);
     oldConstraints.push(c);
     this.setState({
       constraints: oldConstraints,
@@ -442,6 +451,9 @@ class DrawArea extends React.Component {
       case "FREEHAND":
         this.setState({ isDrawing: false });
         break;
+      case "EDIT":
+        //console.log(this.state.selected);
+        break;
       case "LINE" || "POLYGON":
         //do nothing
         break;
@@ -453,7 +465,7 @@ class DrawArea extends React.Component {
           }
         })
         let allShapes = this.state.newShapes.concat(unselectedShapes);
-        this.setState({shapes:allShapes});
+        this.setState( {shapes: allShapes} );
         break;
       default:
         return;
@@ -516,9 +528,9 @@ class DrawArea extends React.Component {
 
   handleKeyPress(e) {
     let code = (e.keyCode ? e.keyCode : e.which);
-    console.log(code);
+    //console.log(code);
     switch (code) {
-      case 13:
+      case 13: //enter
         switch (this.state.tool) {
           case "POLYGON":
               this.setState({isDrawing:false})
@@ -527,19 +539,19 @@ class DrawArea extends React.Component {
             return;
         }
         break;
-      case 80:
+      case 80: //p
         this.setState({tool:"POLYGON"})
         break;
-      case 70:
+      case 70: //f
         this.setState({tool:"FREEHAND"})
         break;
-      case 69:
+      case 69: //e
         this.setState({tool:"EDIT"})
         break;
-      case 83:
+      case 83: //s
         this.setState({tool:"SELECT"})
         break;
-      case 77:
+      case 77: //m
         this.setState({tool:"MOVE"})
         break;
       default:
