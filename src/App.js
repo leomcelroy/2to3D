@@ -63,11 +63,11 @@ class Drawing extends React.Component {
       lineArrayAndColor = lineArrayAndColor.concat(shape.toLines().map(entry => color));
     });
 
-    lineArray = lineArray.concat(this.props.lines);
+    // lineArray = lineArray.concat(this.props.lines);
 
     let freehandColors = this.props.lines.map(line => "black");
 
-    lineArrayAndColor = lineArrayAndColor.concat(freehandColors);
+    // lineArrayAndColor = lineArrayAndColor.concat(freehandColors);
 
     // console.log(lineArray);
     // console.log(lineArrayAndColor);
@@ -76,10 +76,22 @@ class Drawing extends React.Component {
       width: "100%",
       height: "100%",
     }
+
+    let freehandDrawing = this.props.lines.map((line, index) => (
+          <DrawingLine key={index} line={line} color={freehandColors[index]}/>
+        ))
+
     let drawing = <svg style={style}>
         {lineArray.map((line, index) => (
           <DrawingLine key={index} line={line} color={lineArrayAndColor[index]}/>
         ))}
+        {lineArray.map((line, index) => (
+          <circle key={index} cx={`${line[0].x}`} cy={`${line[0].y}`} r="2" fill={lineArrayAndColor[index]}/>
+        ))}
+        {lineArray.map((line, index) => (
+          <circle key={index} cx={`${line[1].x}`} cy={`${line[1].y}`} r="2" fill={lineArrayAndColor[index]}/>
+        ))}
+        {freehandDrawing}
       </svg>
 
     return (
@@ -198,6 +210,12 @@ class DrawArea extends React.Component {
             shape.select();
           }
         })
+        console.log(this.state.shapes.every(shape => shape.shapeContains(point)===false));
+        if (this.state.shapes.every(shape => shape.shapeContains(point)===false)) {
+          this.state.shapes.forEach((shape) => {
+              shape.selected = false;
+          })
+        }
         break;
       case "MOVE":
         var point = this.relativeCoordinatesForEvent(mouseEvent);

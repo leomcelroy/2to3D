@@ -116,6 +116,8 @@ class Polygon { //add another end capability to make polylines, remove line tool
           }
           if (i === this.points_.length-1) {
             return [this.points_[i], this.points_[0]];
+          } else {
+            return this.points_[i];
           }
         } else {
           return this.points_[i];
