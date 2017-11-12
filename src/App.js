@@ -380,7 +380,6 @@ class DrawArea extends React.Component {
           }
           break;
         case "ROTATE":
-
           const functionRotate = (angle, pivot, shape) => {
             let newShape = new Polygon;
             newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
@@ -428,35 +427,34 @@ class DrawArea extends React.Component {
             }
           break;
         case "SCALE":
-          const functionScale = (factor, shape) => {
-            let newShape = new Polygon;
-            newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
-            let pivot = this.state.pivotPoint;
-            var point = this.relativeCoordinatesForEvent(mouseEvent);
-
-            let newPoints = newShape.points_.map(shapePoint => {
-              let angle = functionGetAngle(shapePoint, pivot) + Math.PI;
-              let dist = this.distance(shapePoint, pivot);
-              let newPoint = {x:pivot.x+Math.cos(angle)*factor*dist, y:pivot.y+Math.sin(angle)*factor*dist};
-              return newPoint;
-            })
-
-              newShape.points_ = newPoints;
-
-              return newShape;
-            }
-
           if (this.state.mousedown === true) {
             let newShapes = [];
 
-            var point = this.relativeCoordinatesForEvent(mouseEvent);
             let ogPoint = this.state.originalPoint;
-            let pivot = this.state.pivotPoint;
+            var pivot = this.state.pivotPoint;
+
             let factor = this.distance(point, pivot)/this.distance(ogPoint, pivot); // if point is inside shape factor should be less than 1
 
-            console.log("scale factor",factor);
+            //console.log("scale factor",factor);
+
             this.state.originalShapes.forEach((shape) => {
               if (shape.selected) {
+
+                const functionScale = (factor, shape) => {
+                  let newShape = new Polygon;
+                  newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
+
+                  let newPoints = newShape.points_.map(shapePoint => {
+                    let angle = functionGetAngle(shapePoint, pivot) + Math.PI;
+                    let dist = this.distance(shapePoint, pivot);
+                    let newPoint = {x:pivot.x+Math.cos(angle)*factor*dist, y:pivot.y+Math.sin(angle)*factor*dist};
+                    return newPoint;
+                  })
+
+                    newShape.points_ = newPoints;
+
+                    return newShape;
+                  }
 
                 let newShape = functionScale(factor, shape);
 
@@ -713,6 +711,15 @@ class DrawArea extends React.Component {
       case 83: //s
         this.setState({tool:"SCALE"})
         break;
+      case 8: //delete
+        let unselectedShapes = [];
+        this.state.shapes.forEach(shape => {
+          if (shape.selected === false) {
+            unselectedShapes.push(shape);
+          }
+        })
+        this.setState( {shapes: unselectedShapes, newShapes:[]} );
+        break;
       default:
         return;
     }
@@ -741,7 +748,7 @@ class DrawArea extends React.Component {
         pointer = "default";
         break;
       case "SCALE":
-        pointer = "default";
+        pointer = "nwse-resize";
         break;
       default:
         pointer = "crosshair";
