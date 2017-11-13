@@ -124,6 +124,8 @@ class DrawArea extends React.Component {
     //this.handleKeyPress = this.handleKeyPress.bind(this);
   }
 
+
+
   handleMouseDown(mouseEvent) {
     this.setState({
       mousedown: true,
@@ -227,6 +229,7 @@ class DrawArea extends React.Component {
           })
         }
         break;
+      case "PAN":
       case "MOVE":
         var point = this.relativeCoordinatesForEvent(mouseEvent);
         let originalShapes = [];
@@ -254,7 +257,7 @@ class DrawArea extends React.Component {
           originalShapes.push(newShape);
         })
 
-        const functionAverageX = (total, amount, index, array) => {
+        let functionAverageX = (total, amount, index, array) => {
           if (index === 1) {
             total = total.x;
           }
@@ -266,7 +269,7 @@ class DrawArea extends React.Component {
           }
         };
 
-        const functionAverageY = (total, amount, index, array) => {
+        let functionAverageY = (total, amount, index, array) => {
           if (index === 1) {
             total = total.y;
           }
@@ -285,6 +288,95 @@ class DrawArea extends React.Component {
         //console.log(pivotPoint);
 
         this.setState({pivotPoint:pivotPoint, originalShapes:originalShapes, originalPoint:originalPoint});
+        break;
+      case "ZOOMIN":
+      case "ZOOMOUT":
+        originalShapes = [];
+        points = [];
+
+        this.state.shapes.forEach(shape => {
+          let newShape = new Polygon;
+
+          points = points.concat(shape.points_);
+
+          newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
+          originalShapes.push(newShape);
+        })
+
+        functionAverageX = (total, amount, index, array) => {
+          if (index === 1) {
+            total = total.x;
+          }
+          total += amount.x;
+          if( index === array.length-1 ) {
+            return total/array.length;
+          }else {
+            return total;
+          }
+        };
+
+        functionAverageY = (total, amount, index, array) => {
+          if (index === 1) {
+            total = total.y;
+          }
+          total += amount.y;
+          if( index === array.length-1 ) {
+            return total/array.length;
+          }else {
+            return total;
+          }
+        };
+
+        averageX = points.length > 1 ? points.reduce(functionAverageX) : undefined;
+        averageY = points.length > 1 ? points.reduce(functionAverageY) : undefined;
+
+        pivotPoint = {x:320, y:240} //320 and 240 is center for now, could use object centers {x:averageX, y:averageY}
+        console.log("pivot point",pivotPoint);
+
+        let newShapes = [];
+        var pivot = pivotPoint;
+
+        let factor = undefined;
+
+        if (this.state.tool === "ZOOMOUT") {
+          factor = .9;
+        } else if (this.state.tool === "ZOOMIN") {
+          factor = 1.1;
+        }
+
+        // console.log("scale factor",factor);
+        //
+        // console.log(originalShapes);
+
+        if (originalShapes.length > 0) {
+          originalShapes.forEach((shape) => {
+
+            const functionScale = (factor, shape) => {
+              let newShape = new Polygon;
+              newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
+
+              let newPoints = newShape.points_.map(shapePoint => {
+                //console.log(pivot);
+                let angle = this.functionGetAngle(shapePoint, pivot) + Math.PI;
+                let dist = this.distance(shapePoint, pivot);
+                let newPoint = {x:pivot.x+Math.cos(angle)*factor*dist, y:pivot.y+Math.sin(angle)*factor*dist};
+                return newPoint;
+              })
+
+                newShape.points_ = newPoints;
+
+                return newShape;
+              }
+
+            let newShape = functionScale(factor, shape);
+
+            newShapes.push(newShape);
+
+          });
+        };
+
+        this.setState({newShapes: newShapes});
+
         break;
       default:
         return;
@@ -317,10 +409,11 @@ class DrawArea extends React.Component {
     }
   }
 
+  functionGetAngle(p1, p2) {return Math.atan2(p2.y - p1.y, p2.x - p1.x);}
+
   handleMouseMove(mouseEvent) {
     this.constraintUpdate(); //TODO: MOVE THIS?
 
-    const functionGetAngle = (p1, p2) => Math.atan2(p2.y - p1.y, p2.x - p1.x);
     var point = this.relativeCoordinatesForEvent(mouseEvent);
     if (!this.state.isDrawing) {
       switch (this.state.tool) {
@@ -356,13 +449,14 @@ class DrawArea extends React.Component {
 
           })
           break;
+        case "PAN":
         case "MOVE":
           if (this.state.mousedown === true) {
             var point = this.relativeCoordinatesForEvent(mouseEvent);
             let newShapes = [];
 
             this.state.originalShapes.forEach((shape) => {
-              if (shape.selected) {
+              if (this.state.tool === "PAN" || shape.selected) {
                 let newShape = new Polygon;
                 newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
                 let newPoints = newShape.points_.map(shapePoint => {
@@ -374,7 +468,13 @@ class DrawArea extends React.Component {
                 newShapes.push(newShape);
               }
             });
-            this.setState({newShapes: newShapes});
+
+            if (this.state.tool === "PAN") {
+              this.setState({shapes: newShapes});
+              //console.log(this.state.shapes);
+            } else {
+              this.setState({newShapes: newShapes});
+            }
 
             //console.log(newShapes)
           }
@@ -387,7 +487,7 @@ class DrawArea extends React.Component {
             let newPoints = newShape.points_.map(shapePoint => {
 
               let distanceToPivot = this.distance(shapePoint, pivot);
-              let angleWithPivot = functionGetAngle(shapePoint, pivot);
+              let angleWithPivot = this.functionGetAngle(shapePoint, pivot);
               let delta = angleWithPivot + angle + Math.PI;
 
               let newPoint = {x:pivot.x+Math.cos(delta)*distanceToPivot, y:pivot.y+Math.sin(delta)*distanceToPivot};
@@ -408,8 +508,8 @@ class DrawArea extends React.Component {
             var point = this.relativeCoordinatesForEvent(mouseEvent);
             let ogPoint = this.state.originalPoint;
             let pivot = this.state.pivotPoint;
-            let ogAngle = functionGetAngle(ogPoint, pivot);
-            let newAngle = functionGetAngle(point, pivot);
+            let ogAngle = this.functionGetAngle(ogPoint, pivot);
+            let newAngle = this.functionGetAngle(point, pivot);
             //console.log(newAngle - ogAngle);
 
             //functionRotate(newAngle - ogAngle, pivot, this.state.originalShapes[0]);
@@ -445,7 +545,7 @@ class DrawArea extends React.Component {
                   newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
 
                   let newPoints = newShape.points_.map(shapePoint => {
-                    let angle = functionGetAngle(shapePoint, pivot) + Math.PI;
+                    let angle = this.functionGetAngle(shapePoint, pivot) + Math.PI;
                     let dist = this.distance(shapePoint, pivot);
                     let newPoint = {x:pivot.x+Math.cos(angle)*factor*dist, y:pivot.y+Math.sin(angle)*factor*dist};
                     return newPoint;
@@ -540,6 +640,13 @@ class DrawArea extends React.Component {
         let allShapes = this.state.newShapes.concat(unselectedShapes);
         this.setState( {shapes: allShapes} );
         break;
+      case "PAN":
+        //console.log(this.state.shapes);
+        break;
+      case "ZOOMOUT":
+      case "ZOOMIN":
+        this.setState( {shapes: this.state.newShapes} );
+        break
       default:
         return;
     }
@@ -578,6 +685,12 @@ class DrawArea extends React.Component {
     });
   }
 
+  onClickPan() {
+    this.setState({
+      tool: "PAN",
+    });
+  }
+
   onClickScale() {
     this.setState({
       tool: "SCALE",
@@ -599,6 +712,18 @@ class DrawArea extends React.Component {
   onClickNoTool() {
     this.setState({
         tool: undefined,
+    });
+  }
+
+  onClickZoomIn() {
+    this.setState({
+        tool: "ZOOMIN",
+    });
+  }
+
+  onClickZoomOut() {
+    this.setState({
+        tool: "ZOOMOUT",
     });
   }
 
@@ -711,6 +836,15 @@ class DrawArea extends React.Component {
       case 83: //s
         this.setState({tool:"SCALE"})
         break;
+      case 187: //+
+        this.setState({tool:"ZOOMIN"})
+        break;
+      case 189: //-
+        this.setState({tool:"ZOOMOUT"})
+        break;
+      case 72: //h
+        this.setState({tool:"PAN"})
+        break;
       case 8: //delete
         let unselectedShapes = [];
         this.state.shapes.forEach(shape => {
@@ -747,8 +881,17 @@ class DrawArea extends React.Component {
       case "SELECT":
         pointer = "default";
         break;
+      case "ZOOMIN":
+        pointer = "zoom-in";
+        break;
+      case "ZOOMOUT":
+        pointer = "zoom-out";
+        break;
       case "SCALE":
         pointer = "nwse-resize";
+        break;
+      case "PAN":
+        pointer = "all-scroll";
         break;
       default:
         pointer = "crosshair";
@@ -850,6 +993,9 @@ class DrawArea extends React.Component {
             <tr><td><button style={this.state.tool === "MOVE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickMove(e)}>Move</button></td></tr>
             <tr><td><button style={this.state.tool === "ROTATE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickRotate(e)}>Rotate</button></td></tr>
             <tr><td><button style={this.state.tool === "SCALE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickScale(e)}>Scale</button></td></tr>
+            <tr><td><button style={this.state.tool === "ZOOMIN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickZoomIn(e)}>Zoom In</button></td></tr>
+            <tr><td><button style={this.state.tool === "ZOOMOUT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickZoomOut(e)}>Zoom Out</button></td></tr>
+            <tr><td><button style={this.state.tool === "PAN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickPan(e)}>Pan</button></td></tr>
             <tr><td><button style={this.state.tool === undefined ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickNoTool(e)}>No Tool</button></td></tr>
             <tr><td><h5>Constraints</h5></td></tr>
             <tr><td><button style={defaultButtonStyle} onClick={(e) => this.toZero(e)}>To Zero</button></td></tr>
