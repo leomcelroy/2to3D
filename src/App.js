@@ -470,8 +470,8 @@ class DrawArea extends React.Component {
             });
 
             if (this.state.tool === "PAN") {
-              this.setState({shapes: newShapes});
-              //console.log(this.state.shapes);
+              this.setState({shapes: newShapes, newShapes:[]});
+              break;
             } else {
               this.setState({newShapes: newShapes});
             }
@@ -641,7 +641,7 @@ class DrawArea extends React.Component {
         this.setState( {shapes: allShapes} );
         break;
       case "PAN":
-        //console.log(this.state.shapes);
+        console.log(this.state.shapes);
         break;
       case "ZOOMOUT":
       case "ZOOMIN":
