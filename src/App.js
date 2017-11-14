@@ -92,7 +92,7 @@ class Drawing extends React.Component {
           <circle key={index} cx={`${line[1].x}`} cy={`${line[1].y}`} r="2" fill={lineArrayAndColor[index]}/>
         ))}
         {freehandDrawing}
-        <path d="M100,250 C100,100 400,100 400,250" fill="black"/>
+
       </svg>
 
     return (
