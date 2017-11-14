@@ -17,6 +17,14 @@ class Line {
     //this.points_ = [p1, p2];
   }
 
+  points(points) {
+    if (points === undefined) {
+      return [this.p1_, this.p2_];
+    }
+    this.p1_ = points[0];
+    this.p2_ = points[1];
+  }
+
   p1(p) { if (p){ this.p1_ = p; this.updateLength(); return this;} return this.p1_};
 
   p2(p) { if (p){ this.p2_ = p; this.updateLength(); return this;} return this.p2_};
@@ -54,6 +62,10 @@ class Line {
   shapeContains(point) {
     return onLine(point, this.p1_, this.p2_, this.objectSelectDistance_);
   }
+
+  rendersPath() {
+    return false;
+  }
 }
 
 class Polygon { //add another end capability to make polylines, remove line tool from toolbar
@@ -69,6 +81,13 @@ class Polygon { //add another end capability to make polylines, remove line tool
       this.points_.push(point);
       this.points_.push(point);
     }
+  }
+
+  points(points) {
+    if (points === undefined) {
+      return this.points_;
+    }
+    this.points_ = points;
   }
 
   lockDistance(d) { if(d){ this.lockDistance_ = d; return this} return this.lockDistance_};
@@ -142,7 +161,66 @@ class Polygon { //add another end capability to make polylines, remove line tool
 
     return contained.some(entry => entry===true);
   }
+
+  rendersPath() {
+    return false;
+  }
 } //end Polygon()
+
+class Bezier {
+  constructor(start, c1, c2, end) {
+    this.start_ = start;
+    this.c1_ = c1;
+    this.c2_ = c2;
+    this.end_ = end;
+    this.selected = false;
+    this.pointSelectDistance_ = 15; //todo: setter / getter
+    this.lineSelectDistance_ = 15;
+  }
+
+  points(points) {
+    if (points === undefined) {
+      return [this.start_, this.c1_, this.c2_, this.end_];
+    }
+    this.start_ = points[0];
+    this.c1_ = points[1];
+    this.c2_ = points[2];
+    this.end_ = points[3];
+  }
+
+  lastPoint(point) {
+    this.end_ = point;
+    let diff = {'x': this.end_.x - this.start_.x, 'y': this.end_.y - this.start_.y};
+    this.c1_ = {'x': this.start_.x + (1.0/3) * diff.x,  'y': this.start_.y + (1.0/3) * diff.y};
+    this.c2_ = {'x': this.start_.x + (2.0/3) * diff.x,  'y': this.start_.y + (2.0/3) * diff.y};
+  }
+
+  toPath() {
+    return this.points();
+  }
+
+  shapeContains(point) {
+    return onLine(point, this.start_, this.end_, this.lineSelectDistance_);
+  }
+
+  selectedObjectAt(point) {
+    var obj = undefined;
+    this.points().forEach(p =>{
+      if (distanceSquared(point, p) < this.pointSelectDistance_**2) {
+        obj = p;
+      }
+    });
+    return obj;
+  }
+
+  select() {
+    return this.selected = !this.selected;
+  }
+
+  rendersPath() {
+    return true;
+  }
+}
 
 function onLine(point, p1, p2, buffer) {
   let d1 = distanceSquared(point, p1);
@@ -179,39 +257,6 @@ function pointEqual(p1, p2) {
   return foo;
 }
 
-// function makeShape(type) {
-//
-// }
-//
-// function Line(foo) {
-//   let obj = {
-//     p1: foo,
-//     p2: foo,
-//     pred: undefined,
-//     succ: undefined,
-//   }
-//     obj.moveEnd = (newPoint) => {this.p2 = newPoint;};
-//     //TODO: CACHE RESULT OF RENDER
-//     obj.angle = () => {Math.atan2(this.p1.y - this.p2.y, this.p1.x - this.p2.x);}; //how to make these parametric?
-//     obj.length = () => {Math.sqrt((this.p1.y - this.p2.y)**2 + (this.p1.x - this.p2.x)**2);}; //probably with different functions
-//     obj.render = () => {console.log(this); [{'x': obj.p1.x, 'y': obj.p1.y}, {'x': obj.p2.x, 'y': obj.p2.y}]; };
-//
-//     return obj;
-// }
-//
-// // function PolyLine() {
-// //   return {
-// //     lines: [],
-// //     addLine: (line) => {
-// //       try {
-// //         lines[lines.length - 1].succ = line;
-// //         line.pred = lines[lines.length - 1];
-// //       }
-// //       catch (e) {}
-// //       lines.push(line);
-// //     },
-// //   }
-// // }
 
 
-export {Line, Polygon, ParallelLineConstraint};
+export {Line, Polygon, ParallelLineConstraint, Bezier};

@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import {Line, Polygon, ParallelLineConstraint} from './Shape.js';
+import {Line, Polygon, ParallelLineConstraint, Bezier} from './Shape.js';
 //import ReactDOM from 'react-dom';
 // import makerjs from 'makerjs';
 
@@ -29,14 +29,33 @@ class DrawingLine extends React.Component {
     }
     //console.log(this.props.line);
     const pathData = "M " + this.props.line.map(p => `${p['x']} ${p['y']}`);
-    //console.log(pathData);
+    // console.log(pathData);
+    // console.log(<path d={pathData} style={style}/>);
     return <path d={pathData} style={style}/>;
+  }
+}
+
+class DrawingPath extends React.Component {
+  render() {
+    let style = {
+      fill: "none",
+      strokeWidth: "1px",
+      stroke: this.props.color,
+      strokeLinejoin: "round",
+      strokeLinecap: "round",
+    }
+    // console.log(this.props.points);
+    const pathData = "M " + this.props.points[0]['x'] + " " + this.props.points[0]['y'] +
+                     " C " + this.props.points.slice(1).map(p => `${p['x']} ${p['y']}`);
+    // console.log(pathData);
+    // console.log(<path d={pathData} style={style}/>);
+    return <path d={pathData} style={style}/>
   }
 }
 
 
 class Drawing extends React.Component {
-
+  //TODO: MAYBE REFACTOR SO THAT BEZIERS AND OTHERS ARE DRAWN WITH THE SAME PROCESS
   render() {
     let shapeArray = this.props.shapes;
     let newShapeArray = this.props.newShapes;
@@ -44,24 +63,34 @@ class Drawing extends React.Component {
     let lineArrayAndColor = [];
     let color = "black";
     shapeArray.forEach((shape) => {
-      if (shape.selected === true) {
-        color = "blue";
-      } else {
-        color = "black";
+      if (!shape.rendersPath()) {
+        if (shape.selected === true) {
+          color = "blue";
+        } else {
+          color = "black";
+        }
+        lineArray = lineArray.concat(shape.toLines());
+        lineArrayAndColor = lineArrayAndColor.concat(shape.toLines().map(entry => color));
       }
-      lineArray = lineArray.concat(shape.toLines());
-      lineArrayAndColor = lineArrayAndColor.concat(shape.toLines().map(entry => color));
     });
 
     newShapeArray.forEach((shape) => {
-      if (shape.selected === true) {
-        color = "blue";
-      } else {
-        color = "black";
+      if (!shape.rendersPath()) {
+        if (shape.selected === true) {
+          color = "blue";
+        } else {
+          color = "black";
+        }
+        lineArray = lineArray.concat(shape.toLines());
+        lineArrayAndColor = lineArrayAndColor.concat(shape.toLines().map(entry => color));
       }
-      lineArray = lineArray.concat(shape.toLines());
-      lineArrayAndColor = lineArrayAndColor.concat(shape.toLines().map(entry => color));
     });
+
+    let pathShapes = shapeArray.filter(shape => shape.rendersPath());
+    // console.log(pathShapes);
+    let pathsDrawing = pathShapes.map((shape, index) => (
+      <DrawingPath key={index} points={shape.toPath()} color={shape.selected ? "blue" : "black"} selected={shape.selected}/>
+    ));
 
     // lineArray = lineArray.concat(this.props.lines);
 
@@ -92,6 +121,12 @@ class Drawing extends React.Component {
           <circle key={index} cx={`${line[1].x}`} cy={`${line[1].y}`} r="2" fill={lineArrayAndColor[index]}/>
         ))}
         {freehandDrawing}
+        {pathsDrawing}
+        {pathShapes.map(shape => shape.toPath().map(point => {
+          if (shape.selected) {
+            return <circle cx={`${point.x}`} cy={`${point.y}`} r="2" fill={"blue"}/>
+          }
+        }))}
 
       </svg>
 
@@ -220,6 +255,22 @@ class DrawArea extends React.Component {
               isDrawing: true,
             });
           }
+        break;
+      case "BEZIER":
+      console.log(this.state.isDrawing);
+      console.log(this.state.shapes);
+        if (this.state.isDrawing) {
+          this.setState({
+            isDrawing: false,
+          });
+        } else {
+          let bezier = new Bezier(point, point, point, point);
+          oldShapes.push(bezier);
+          this.setState({
+            shapes: oldShapes,
+            isDrawing: true,
+          });
+        }
         break;
       case "EDIT":
         let selected = undefined;
@@ -440,12 +491,12 @@ class DrawArea extends React.Component {
               if (this.state.tool === "PAN" || shape.selected) {
                 let newShape = new Polygon;
                 newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
-                let newPoints = newShape.points_.map(shapePoint => {
+                let newPoints = newShape.points().map(shapePoint => {
                   //console.log(point.x-this.state.pivotPoint.x, point.y-this.state.pivotPoint.y)
                   return ({x:shapePoint.x+(point.x-this.state.pivotPoint.x), y:shapePoint.y+(point.y-this.state.pivotPoint.y)}) //denomiator sets speed of movement
                 });
                 //console.log(newPoints);
-                newShape.points_ = newPoints;
+                newShape.points(newPoints);
                 newShapes.push(newShape);
               }
             });
@@ -565,6 +616,7 @@ class DrawArea extends React.Component {
         });
       break;
 
+      case "BEZIER":
       case "POLYGON":
         oldShapes[oldShapes.length -1].lastPoint(point); //update the last point of the polygon
         this.setState({
@@ -693,6 +745,12 @@ class DrawArea extends React.Component {
   onClickEdit() {
     this.setState({
       tool: "EDIT",
+    });
+  }
+
+  onClickBezier() {
+    this.setState({
+      tool: "BEZIER",
     });
   }
 
@@ -976,6 +1034,7 @@ class DrawArea extends React.Component {
             <tr><td><h5>Tools</h5></td></tr>
             <tr><td><button style={this.state.tool === "FREEHAND" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickFreeHand(e)}>Free Hand</button></td></tr>
             <tr><td><button style={this.state.tool === "POLYGON" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickPolygon(e)}>Polygon</button></td></tr>
+            <tr><td><button style={this.state.tool === "BEZIER" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickBezier(e)}>Bezier</button></td></tr>
             <tr><td><button style={this.state.tool === "EDIT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickEdit(e)}>Edit</button></td></tr>
             <tr><td><button style={this.state.tool === "SELECT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickSelect(e)}>Select</button></td></tr>
             <tr><td><button style={this.state.tool === "MOVE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickMove(e)}>Move</button></td></tr>
