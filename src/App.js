@@ -92,6 +92,7 @@ class Drawing extends React.Component {
           <circle key={index} cx={`${line[1].x}`} cy={`${line[1].y}`} r="2" fill={lineArrayAndColor[index]}/>
         ))}
         {freehandDrawing}
+        <path d="M100,250 C100,100 400,100 400,250" fill="black"/>
       </svg>
 
     return (
@@ -127,6 +128,33 @@ class DrawArea extends React.Component {
 
 
   handleMouseDown(mouseEvent) {
+    //console.log("mouse down");
+
+    //helper functions
+    let functionAverageX = (total, amount, index, array) => {
+      if (index === 1) {
+        total = total.x;
+      }
+      total += amount.x;
+      if( index === array.length-1 ) {
+        return total/array.length;
+      }else {
+        return total;
+      }
+    };
+
+    let functionAverageY = (total, amount, index, array) => {
+      if (index === 1) {
+        total = total.y;
+      }
+      total += amount.y;
+      if( index === array.length-1 ) {
+        return total/array.length;
+      }else {
+        return total;
+      }
+    };
+
     this.setState({
       mousedown: true,
     });
@@ -257,30 +285,6 @@ class DrawArea extends React.Component {
           originalShapes.push(newShape);
         })
 
-        let functionAverageX = (total, amount, index, array) => {
-          if (index === 1) {
-            total = total.x;
-          }
-          total += amount.x;
-          if( index === array.length-1 ) {
-            return total/array.length;
-          }else {
-            return total;
-          }
-        };
-
-        let functionAverageY = (total, amount, index, array) => {
-          if (index === 1) {
-            total = total.y;
-          }
-          total += amount.y;
-          if( index === array.length-1 ) {
-            return total/array.length;
-          }else {
-            return total;
-          }
-        };
-
         let averageX = points.length > 1 ? points.reduce(functionAverageX) : undefined;
         let averageY = points.length > 1 ? points.reduce(functionAverageY) : undefined;
 
@@ -302,30 +306,6 @@ class DrawArea extends React.Component {
           newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
           originalShapes.push(newShape);
         })
-
-        functionAverageX = (total, amount, index, array) => {
-          if (index === 1) {
-            total = total.x;
-          }
-          total += amount.x;
-          if( index === array.length-1 ) {
-            return total/array.length;
-          }else {
-            return total;
-          }
-        };
-
-        functionAverageY = (total, amount, index, array) => {
-          if (index === 1) {
-            total = total.y;
-          }
-          total += amount.y;
-          if( index === array.length-1 ) {
-            return total/array.length;
-          }else {
-            return total;
-          }
-        };
 
         averageX = points.length > 1 ? points.reduce(functionAverageX) : undefined;
         averageY = points.length > 1 ? points.reduce(functionAverageY) : undefined;
@@ -412,6 +392,7 @@ class DrawArea extends React.Component {
   functionGetAngle(p1, p2) {return Math.atan2(p2.y - p1.y, p2.x - p1.x);}
 
   handleMouseMove(mouseEvent) {
+    //console.log("mouse move");
     this.constraintUpdate(); //TODO: MOVE THIS?
 
     var point = this.relativeCoordinatesForEvent(mouseEvent);
@@ -472,7 +453,7 @@ class DrawArea extends React.Component {
             if (this.state.tool === "PAN") {
               this.setState({shapes: newShapes, newShapes:[]});
               break;
-            } else {
+            } else if (this.state.tool === "MOVE") {
               this.setState({newShapes: newShapes});
             }
 
@@ -613,44 +594,50 @@ class DrawArea extends React.Component {
     }
   }
 
-  handleMouseUp() {
+  handleMouseUp(mouseEvent) {
+    let inCanvas = mouseEvent.srcElement ? mouseEvent.srcElement.localName : false;
+    let inCanvasBoolean = inCanvas === "svg";
+    //console.log("mouse up");
+
     this.setState({
       mousedown: false,
     })
-    //console.log(this.state.tool);
-    switch (this.state.tool) {
-      case "FREEHAND":
-        this.setState({ isDrawing: false });
-        break;
-      case "EDIT":
-        //console.log(this.state.selected);
-        break;
-      case "LINE" || "POLYGON":
-        //do nothing
-        break;
-      case "ROTATE": // fall-through, or statement doesn't work
-      case "SCALE":
-      case "MOVE":
-        let unselectedShapes = [];
-        this.state.shapes.forEach(shape => {
-          if (shape.selected === false) {
-            unselectedShapes.push(shape);
-          }
-        })
-        let allShapes = this.state.newShapes.concat(unselectedShapes);
-        this.setState( {shapes: allShapes} );
-        break;
-      case "PAN":
-        console.log(this.state.shapes);
-        break;
-      case "ZOOMOUT":
-      case "ZOOMIN":
-        this.setState( {shapes: this.state.newShapes} );
-        break
-      default:
-        return;
-    }
 
+    if (inCanvasBoolean) {
+      //console.log(this.state.tool);
+      switch (this.state.tool) {
+        case "FREEHAND":
+          this.setState({ isDrawing: false });
+          break;
+        case "EDIT":
+          //console.log(this.state.selected);
+          break;
+        case "LINE" || "POLYGON":
+          //do nothing
+          break;
+        case "ROTATE": // fall-through, or statement doesn't work
+        case "SCALE":
+        case "MOVE":
+          let unselectedShapes = [];
+          this.state.shapes.forEach(shape => {
+            if (shape.selected === false) {
+              unselectedShapes.push(shape);
+            }
+          })
+          let allShapes = this.state.newShapes.concat(unselectedShapes);
+          this.setState( {shapes: allShapes} );
+          break;
+        case "PAN":
+          console.log(this.state.shapes);
+          break;
+        case "ZOOMOUT":
+        case "ZOOMIN":
+          this.setState( {shapes: this.state.newShapes} );
+          break
+        default:
+          return;
+      }
+    }
   }
 
   //TODO: REFACTOR ALL OF THESE INTO ONE
@@ -975,6 +962,7 @@ class DrawArea extends React.Component {
           ref="drawArea"
           onMouseDown={this.handleMouseDown}
           onMouseMove={this.handleMouseMove}
+          onMouseUp={this.handleMouseUp}
           onKeyDown={(e) => this.handleKeyPress(e)}
           tabIndex="0"
         >
