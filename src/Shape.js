@@ -167,7 +167,7 @@ class Polygon { //add another end capability to make polylines, remove line tool
   }
 } //end Polygon()
 
-class Rectangle {
+class Rectangle { //TODO: This should use constraints to maintain form
   constructor(point) {
     this.shape_ = 'rectangle';
     this.points_ = [];
@@ -270,7 +270,7 @@ class Rectangle {
   rendersPath() {
     return false;
   }
-}
+} //end Rectangle()
 
 class Freehand {
   constructor(point) {
@@ -292,11 +292,7 @@ class Freehand {
 
   lastPoint(p) {  //if arg is specified, sets the last point of the rectangle and returns this
 
-    if (!p) {
-      return this.points_[this.points_.length -1];
-    } else {
-      this.points_.push(p);
-    }
+    this.points_.push(p);
 
     return this;
   }
@@ -308,7 +304,7 @@ class Freehand {
     this.points_ = points;
   }
 
-  lockDistance(d) { if(d){ this.lockDistance_ = d; return this} return this.lockDistance_};
+  //lockDistance(d) { if(d){ this.lockDistance_ = d; return this} return this.lockDistance_};
 
   toLines() {
     let lines = []
@@ -327,20 +323,7 @@ class Freehand {
     for (var i=0; i < this.points_.length; i++) {
       let d1 = distanceSquared(point, this.points_[i]);
       if (d1 < this.pointSelectDistance_**2) {
-        // console.log('point!');
-        // console.log(i);
-        if (this.closed(this)) {
-          if (i === 0) { //this is a hack double select only works with end point for some reason
-            i = this.points_.length - 1;
-          }
-          if (i === this.points_.length-1) {
-            return [this.points_[i], this.points_[0]];
-          } else {
-            return this.points_[i];
-          }
-        } else {
-          return this.points_[i];
-        }
+        return this.points_[i];
       }
     }
     //try lines
@@ -364,33 +347,33 @@ class Freehand {
   rendersPath() {
     return false;
   }
-}
+} //end Freehand()
 
-class Point {
-  constructor(point) {
-    this.shape_ = 'point';
-    this.points_ = [];
-    this.x = point ? point.x : undefined;
-    this.y = point ? point.y : undefined;
-    this.pointSelectDistance_ = 5; //todo: setter / getter
-    this.selected = false;
-
-    if (point) {
-      this.points_.push(point);
-    }
-
-  }
-
-  closed() {return true};
-
-  select() {
-    return this.selected = !this.selected;
-  }
-
-  rendersPath() {
-    return false;
-  }
-}
+ class Point {
+//   constructor(point) {
+//     this.shape_ = 'point';
+//     this.points_ = [];
+//     this.x = point ? point.x : undefined;
+//     this.y = point ? point.y : undefined;
+//     this.pointSelectDistance_ = 5; //todo: setter / getter
+//     this.selected = false;
+//
+//     if (point) {
+//       this.points_.push(point);
+//     }
+//
+//   }
+//
+//   closed() {return true};
+//
+//   select() {
+//     return this.selected = !this.selected;
+//   }
+//
+//   rendersPath() {
+//     return false;
+//   }
+ }
 
 class Bezier {
   constructor(start, c1, c2, end) {

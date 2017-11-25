@@ -493,7 +493,7 @@ class DrawArea extends React.Component {
     var point = this.relativeCoordinatesForEvent(mouseEvent);
     if (!this.state.isDrawing) {
       switch (this.state.tool) {
-        case "EDIT":
+        case "EDIT": //TODO: change this to use coincident constraint with pointer
           if (this.state.mousedown && this.state.selected && this.isPointOrArrayOfPoints(this.state.selected)) {
             // console.log("input", point)
             if (Array.isArray(this.state.selected) === false) {
@@ -842,7 +842,7 @@ class DrawArea extends React.Component {
     this.setState({}); //call render
   }
 
-  coincident() { //assumes selected is a point
+  test() {
     //testing
     let selected = this.state.selected;
     let sPoints = this.state.selectedPoints;
@@ -868,6 +868,11 @@ class DrawArea extends React.Component {
       console.log(a);
     }
     //end of testing
+  }
+
+  coincident() { //assumes selected is a point
+    let sPoints = this.state.selectedPoints;
+    let p = sPoints.length;
 
     let oldConstraints = this.state.constraints;
     let c = CoincidentConstraint(sPoints[p-1], sPoints[p-2]);
@@ -1280,6 +1285,7 @@ class DrawArea extends React.Component {
               <td>
                 <button style={defaultButtonStyle} onClick={(e) => this.makeHorizontal(e)}>Horizontal</button>
                 <button style={defaultButtonStyle} onClick={(e) => this.makeVertical(e)}>Vertical</button>
+                <button style={defaultButtonStyle} onClick={(e) => this.test(e)}>Test</button>
               </td>
             </tr>
             <tr>
