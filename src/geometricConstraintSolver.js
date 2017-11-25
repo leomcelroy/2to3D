@@ -37,8 +37,94 @@ function angle(line1, line2) {
   return angle;
 }
 
+// constraints
 function CoincidentConstraint(point1, point2) {
-  return point1.x === point2.x && point1.y === point2.y
+  let constraint = {
+    point1,
+    point2,
+  }
+
+  constraint.satisfy = function() {
+
+    if (this.point1.x === this.point2.x && this.point1.y === this.point2.y) {
+      return false;
+    }
+    this.point2.x = this.point1.x;
+    this.point2.y = this.point1.y;
+
+    this.point1.x = this.point1.x;
+    this.point1.y = this.point1.y;
+
+    return true;
+  }
+
+  return constraint
+}
+
+function ParallelLineConstraint(line1, line2) {
+  let constraint = {
+    line1,
+    line2,
+  }
+  constraint.satisfy = function() {
+    if (this.line1.angle() === this.line2.angle()) {
+      return false;
+    }
+    this.line2.angle(this.line1.angle());
+    return true;
+  }
+
+  return constraint
+}
+
+function PerpendicularLineConstraint(line1, line2) {
+  let constraint = {
+    line1,
+    line2,
+  }
+  constraint.satisfy = function() {
+    if (Math.abs(this.line1.angle() - this.line2.angle()) === Math.PI/2) {
+      return false;
+    }
+    this.line2.angle(this.line1.angle()-Math.PI/2);
+    return true;
+  }
+
+  return constraint
+}
+
+function HorizontalLineConstraint(line1) {
+  let constraint = {
+    line1,
+  }
+  constraint.satisfy = function() {
+    if (this.line1.angle() === 0) {
+      return false;
+    }
+    this.line1.angle(0);
+    return true;
+  }
+
+  return constraint
+}
+
+function VerticalLineConstraint(line1) {
+  let constraint = {
+    line1,
+  }
+  constraint.satisfy = function() {
+    if (this.line1.angle() === Math.PI/2) {
+      return false;
+    }
+    this.line1.angle(Math.PI/2);
+    return true;
+  }
+
+  return constraint
+}
+
+function LineAngleConstraint(line, angle) { //a quick example?
+
 }
 
 // class DistanceConstraint(point1, point2, distance) {
@@ -65,4 +151,4 @@ function CoincidentConstraint(point1, point2) {
 //
 // }
 
-export {CoincidentConstraint, angle};
+export {CoincidentConstraint, ParallelLineConstraint, PerpendicularLineConstraint, HorizontalLineConstraint, angle, VerticalLineConstraint};

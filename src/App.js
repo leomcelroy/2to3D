@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
-import {Line, Polygon, Bezier, Rectangle, Freehand, Point, ParallelLineConstraint, HorizontalLineConstraint} from './Shape.js';
-import {angle} from './geometricConstraintSolver.js';
+import {Line, Polygon, Bezier, Rectangle, Freehand, Point} from './Shape.js';
+import {CoincidentConstraint, ParallelLineConstraint, PerpendicularLineConstraint, VerticalLineConstraint, HorizontalLineConstraint, angle} from './GeometricConstraintSolver.js';
 //import ReactDOM from 'react-dom';
 // import makerjs from 'makerjs';
 
@@ -185,26 +185,6 @@ class DrawArea extends React.Component {
   handleMouseDown(mouseEvent) {
     //console.log("mouse down");
 
-    //testing
-    let selected = this.state.selected;
-    let sPoints = this.state.selectedPoints;
-    let lines = this.state.selectedLines;
-    let l = lines.length;
-
-    console.log("selected", selected);
-    console.log("lines", lines);
-    console.log("points", sPoints);
-
-    if (l >= 2) {
-      console.log("ready to roll")
-
-      let a = angle(lines[l-1], lines[l-2]) /(2*Math.PI) * 360; //in degrees
-      if (a < 0) { a = 180 + a};
-      //if (a === 0) {a = 90};
-      console.log(a);
-    }
-    //end of testing
-
     //helper functions
     let functionAverageX = (total, amount, index, array) => {
       if (index === 1) {
@@ -339,6 +319,7 @@ class DrawArea extends React.Component {
           let obj = shape.selectedObjectAt(point);
           if (obj) {
             selected = obj;
+            console.log(obj);
 
             if (selected.shape_ === "line") {
               lines.push(selected);
@@ -861,6 +842,42 @@ class DrawArea extends React.Component {
     this.setState({}); //call render
   }
 
+  coincident() { //assumes selected is a point
+    //testing
+    let selected = this.state.selected;
+    let sPoints = this.state.selectedPoints;
+    let p = sPoints.length;
+    let lines = this.state.selectedLines;
+    let l = lines.length;
+
+    console.log("selected", selected);
+    console.log("lines", lines);
+    console.log("points", sPoints);
+
+    if (p >= 2) {
+      let c = CoincidentConstraint(sPoints[p-1], sPoints[p-2]);
+      console.log(c);
+    }
+
+    if (l >= 2) {
+      console.log("ready to roll")
+
+      let a = angle(lines[l-1], lines[l-2]) /(2*Math.PI) * 360; //in degrees
+      if (a < 0) { a = 180 + a};
+      //if (a === 0) {a = 90};
+      console.log(a);
+    }
+    //end of testing
+
+    let oldConstraints = this.state.constraints;
+    let c = CoincidentConstraint(sPoints[p-1], sPoints[p-2]);
+    oldConstraints.push(c);
+    this.setState({
+      constraints: oldConstraints,
+    });
+    this.constraintUpdate();
+  }
+
   horizontal() { //assumes selected is a line
     // this.state.selected.p2_.y = this.state.selected.p1_.y;
     this.state.selectedLines[this.state.selectedLines.length-1].angle(0);
@@ -877,6 +894,16 @@ class DrawArea extends React.Component {
     this.constraintUpdate();
   }
 
+  makeVertical() {
+    let oldConstraints = this.state.constraints;
+    let c = VerticalLineConstraint(this.state.selectedLines[this.state.selectedLines.length-1]);
+    oldConstraints.push(c);
+    this.setState({
+      constraints: oldConstraints,
+    });
+    this.constraintUpdate();
+  }
+
   makeParallel() {
     let oldConstraints = this.state.constraints;
     let c = ParallelLineConstraint(this.state.selectedLines[this.state.selectedLines.length-2], this.state.selectedLines[this.state.selectedLines.length-1]);
@@ -886,7 +913,16 @@ class DrawArea extends React.Component {
     });
     this.constraintUpdate();
   }
-//------------------------------------------------
+
+  makePerpendicular() {
+    let oldConstraints = this.state.constraints;
+    let c = PerpendicularLineConstraint(this.state.selectedLines[this.state.selectedLines.length-2], this.state.selectedLines[this.state.selectedLines.length-1]);
+    oldConstraints.push(c);
+    this.setState({
+      constraints: oldConstraints,
+    });
+    this.constraintUpdate();
+  }
 
 //------------------------component mount functions------------------------
   componentDidMount() {
@@ -1233,9 +1269,25 @@ class DrawArea extends React.Component {
             <tr><td><button style={this.state.tool === "PAN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickPan(e)}>Pan</button></td></tr>
             <tr><td><button style={this.state.tool === undefined ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickNoTool(e)}>No Tool</button></td></tr>
             <tr><td><b>Constraints</b></td></tr>
-            <tr><td><button style={defaultButtonStyle} onClick={(e) => this.toZero(e)}>To Zero</button></td></tr>
-            <tr><td><button style={defaultButtonStyle} onClick={(e) => this.makeHorizontal(e)}>Horizontal</button></td></tr>
-            <tr><td><button style={defaultButtonStyle} onClick={(e) => this.makeParallel(e)}>Make Parallel</button></td></tr>
+            <tr>
+              <td>
+                <button style={defaultButtonStyle} onClick={(e) => this.toZero(e)}>To Zero</button>
+                <button style={defaultButtonStyle} onClick={(e) => this.toZero(e)}>TODO: Dimension</button>
+                <button style={defaultButtonStyle} onClick={(e) => this.coincident(e)}>Coincident</button>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <button style={defaultButtonStyle} onClick={(e) => this.makeHorizontal(e)}>Horizontal</button>
+                <button style={defaultButtonStyle} onClick={(e) => this.makeVertical(e)}>Vertical</button>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <button style={defaultButtonStyle} onClick={(e) => this.makeParallel(e)}>Parallel</button>
+                <button style={defaultButtonStyle} onClick={(e) => this.makePerpendicular(e)}>Perpendicular</button>
+              </td>
+            </tr>
             <tr><td><b>File</b></td></tr>
             <tr><td><button style={downloadButtonStyle} onClick={(e) => this.handleDownload(e)}>Download SVG</button></td></tr>
             <tr><td><button style={downloadButtonStyle} onClick={(e) => this.handleSave(e)}>Save</button></td></tr>

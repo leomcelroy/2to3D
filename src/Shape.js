@@ -455,40 +455,40 @@ function onLine(point, p1, p2, buffer) {
 
 //-------------------------------constraints-------------------------------
 
-function ParallelLineConstraint(line1, line2) {
-  let constraint = {
-    line1,
-    line2,
-  }
-  constraint.satisfy = function() {
-    if (this.line1.angle() === this.line2.angle()) {
-      return false;
-    }
-    this.line2.angle(this.line1.angle());
-    return true;
-  }
-
-  return constraint
-}
-
-function HorizontalLineConstraint(line1) {
-  let constraint = {
-    line1,
-  }
-  constraint.satisfy = function() {
-    if (this.line1.angle() === 0) {
-      return false;
-    }
-    this.line1.angle(0);
-    return true;
-  }
-
-  return constraint
-}
-
-function LineAngleConstraint(line, angle) { //a quick example?
-
-}
+// function ParallelLineConstraint(line1, line2) {
+//   let constraint = {
+//     line1,
+//     line2,
+//   }
+//   constraint.satisfy = function() {
+//     if (this.line1.angle() === this.line2.angle()) {
+//       return false;
+//     }
+//     this.line2.angle(this.line1.angle());
+//     return true;
+//   }
+//
+//   return constraint
+// }
+//
+// function HorizontalLineConstraint(line1) {
+//   let constraint = {
+//     line1,
+//   }
+//   constraint.satisfy = function() {
+//     if (this.line1.angle() === 0) {
+//       return false;
+//     }
+//     this.line1.angle(0);
+//     return true;
+//   }
+//
+//   return constraint
+// }
+//
+// function LineAngleConstraint(line, angle) { //a quick example?
+//
+// }
 
 //-------------------------------helper functions-------------------------------
 
@@ -503,4 +503,4 @@ function pointEqual(p1, p2) {
 
 
 
-export {Line, Polygon, Bezier, Rectangle, Freehand, Point, ParallelLineConstraint, HorizontalLineConstraint};
+export {Line, Polygon, Bezier, Rectangle, Freehand, Point};
