@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
-import {Line, Polygon, ParallelLineConstraint, Bezier} from './Shape.js';
+import {Line, Polygon, Bezier, Rectangle, Freehand, Point, ParallelLineConstraint, HorizontalLineConstraint} from './Shape.js';
+import {angle} from './geometricConstraintSolver.js';
 //import ReactDOM from 'react-dom';
 // import makerjs from 'makerjs';
 
@@ -61,6 +62,7 @@ class Drawing extends React.Component {
     let newShapeArray = this.props.newShapes;
     let lineArray = [];
     let lineArrayAndColor = [];
+    let lineArrayAndType = [];
     let color = "black";
     shapeArray.forEach((shape) => {
       if (!shape.rendersPath()) {
@@ -69,8 +71,11 @@ class Drawing extends React.Component {
         } else {
           color = "black";
         }
+        let type = shape.shape_;
+
         lineArray = lineArray.concat(shape.toLines());
         lineArrayAndColor = lineArrayAndColor.concat(shape.toLines().map(entry => color));
+        lineArrayAndType = lineArrayAndType.concat(shape.toLines().map(entry => type));
       }
     });
 
@@ -81,10 +86,15 @@ class Drawing extends React.Component {
         } else {
           color = "black";
         }
+        let type = shape.shape_;
+
         lineArray = lineArray.concat(shape.toLines());
         lineArrayAndColor = lineArrayAndColor.concat(shape.toLines().map(entry => color));
+        lineArrayAndType = lineArrayAndType.concat(shape.toLines().map(entry => type));
       }
     });
+
+    //console.log(lineArrayAndType);
 
     let pathShapes = shapeArray.filter(shape => shape.rendersPath());
     // console.log(pathShapes);
@@ -94,7 +104,7 @@ class Drawing extends React.Component {
 
     // lineArray = lineArray.concat(this.props.lines);
 
-    let freehandColors = this.props.lines.map(line => "black");
+    //let freehandColors = this.props.lines.map(line => "black");
 
     // lineArrayAndColor = lineArrayAndColor.concat(freehandColors);
 
@@ -106,24 +116,32 @@ class Drawing extends React.Component {
       height: "100%",
     }
 
-    let freehandDrawing = this.props.lines.map((line, index) => (
-          <DrawingLine key={index} line={line} color={freehandColors[index]}/>
-        ))
+    // let freehandDrawing = this.props.lines.map((line, index) => (
+    //       <DrawingLine key={index} line={line} color={freehandColors[index]}/>
+    //     ))
 
     let drawing = <svg style={style}>
         {lineArray.map((line, index) => (
           <DrawingLine key={index} line={line} color={lineArrayAndColor[index]}/>
         ))}
-        {lineArray.map((line, index) => (
-          <circle key={index} cx={`${line[0].x}`} cy={`${line[0].y}`} r="2" fill={lineArrayAndColor[index]}/>
-        ))}
-        {lineArray.map((line, index) => (
-          <circle key={index} cx={`${line[1].x}`} cy={`${line[1].y}`} r="2" fill={lineArrayAndColor[index]}/>
-        ))}
-        {freehandDrawing}
+        {lineArray.map((line, index) => {
+          if (lineArrayAndType[index] !== "freehand" || lineArrayAndColor[index] === "blue") { //change to freehand to remove points from freehand lines
+            return <circle key={index} cx={`${line[0].x}`} cy={`${line[0].y}`} r="2" fill={lineArrayAndColor[index]}/>
+          } else {
+            return
+          }
+        })}
+        {lineArray.map((line, index) => {
+          if (lineArrayAndType[index] !== "freehand" || lineArrayAndColor[index] === "blue") { //change to freehand to remove points from freehand lines
+            return <circle key={index} cx={`${line[1].x}`} cy={`${line[1].y}`} r="2" fill={lineArrayAndColor[index]}/>
+          } else {
+            return
+          }
+        })}
+        {/*freehandDrawing*/}
         {pathsDrawing}
         {pathShapes.map(shape => shape.toPath().map(point => {
-          if (shape.selected) {
+          if (shape.selected || !shape.selected) { //TODO: bad style just want it to display for testing purposes
             return <circle cx={`${point.x}`} cy={`${point.y}`} r="2" fill={"blue"}/>
           }
         }))}
@@ -143,7 +161,7 @@ class DrawArea extends React.Component {
     this.state = {
       isDrawing: false,
       tool: undefined,
-      lines: [], //will be a list of lists
+      //lines: [], //will be a list of lists
       start: undefined,
       shapes: [], //will be a list of shapes
       selected: undefined, //will be whatever object is 'selected'
@@ -152,7 +170,9 @@ class DrawArea extends React.Component {
       originalShapes: undefined,
       newShapes: [],
       selectedLines: [],
+      selectedPoints: [],
       originalPoint: undefined,
+      //file: undefined,
     };
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -164,6 +184,26 @@ class DrawArea extends React.Component {
 
   handleMouseDown(mouseEvent) {
     //console.log("mouse down");
+
+    //testing
+    let selected = this.state.selected;
+    let sPoints = this.state.selectedPoints;
+    let lines = this.state.selectedLines;
+    let l = lines.length;
+
+    console.log("selected", selected);
+    console.log("lines", lines);
+    console.log("points", sPoints);
+
+    if (l >= 2) {
+      console.log("ready to roll")
+
+      let a = angle(lines[l-1], lines[l-2]) /(2*Math.PI) * 360; //in degrees
+      if (a < 0) { a = 180 + a};
+      //if (a === 0) {a = 90};
+      console.log(a);
+    }
+    //end of testing
 
     //helper functions
     let functionAverageX = (total, amount, index, array) => {
@@ -189,6 +229,7 @@ class DrawArea extends React.Component {
         return total;
       }
     };
+    //end of helper functions
 
     this.setState({
       mousedown: true,
@@ -201,18 +242,25 @@ class DrawArea extends React.Component {
 
     switch (this.state.tool) {
       case "FREEHAND":
-        let oldState = this.state.lines;
-
+        // let oldState = this.state.lines;
+        //
         // console.log("old: ", oldState);
-        oldState.push([point]);
-        //console.log(oldState);
-
-        let newState = oldState;
-
+        // oldState.push([point]);
+        // console.log(oldState);
+        //
+        // let newState = oldState;
         // console.log("new: ", newState)
 
+        // this.setState({
+        //     lines: newState,
+        //     isDrawing: true,
+        // });
+
+        let freehandCurve = new Freehand(point);
+        oldShapes.push(freehandCurve);
+
         this.setState({
-            lines: newState,
+            shapes: oldShapes,
             isDrawing: true,
         });
         break;
@@ -232,33 +280,44 @@ class DrawArea extends React.Component {
         }
         break;
       case "POLYGON":
-          if (this.state.isDrawing) {
-            if (oldShapes[oldShapes.length -1].closed()) {
-              // console.log('closed');
-              this.setState({
-                isDrawing: false,
-              });
-            } else {
-              // console.log('not closed');
-              oldShapes[oldShapes.length-1].addPoint(point);
-              this.setState({
-                shapes: oldShapes,
-                //isDrawing: true, //this is redundant, but i may refactor later
-              })
-            }
+        if (this.state.isDrawing) {
+          if (oldShapes[oldShapes.length -1].closed()) {
+            // console.log('closed');
+            this.setState({
+              isDrawing: false,
+            });
           } else {
-            let polygon = new Polygon(point);
-
-            oldShapes.push(polygon);
+            // console.log('not closed');
+            oldShapes[oldShapes.length-1].addPoint(point);
             this.setState({
               shapes: oldShapes,
-              isDrawing: true,
-            });
+              //isDrawing: true, //this is redundant, but i may refactor later
+            })
           }
+        } else {
+          let polygon = new Polygon(point);
+
+          oldShapes.push(polygon);
+          this.setState({
+            shapes: oldShapes,
+            isDrawing: true,
+          });
+        }
+        break;
+      case "RECTANGLE":
+        let rectangle = new Rectangle(point);
+
+        oldShapes.push(rectangle);
+
+        this.setState({
+          shapes: oldShapes,
+          isDrawing: true,
+        });
+
         break;
       case "BEZIER":
-      console.log(this.state.isDrawing);
-      console.log(this.state.shapes);
+        //console.log(this.state.isDrawing);
+        //console.log(this.state.shapes);
         if (this.state.isDrawing) {
           this.setState({
             isDrawing: false,
@@ -272,9 +331,10 @@ class DrawArea extends React.Component {
           });
         }
         break;
-      case "EDIT":
+      case "EDIT": //need to be able to select points and lines
         let selected = undefined;
         let lines = this.state.selectedLines;
+        let sPoints = this.state.selectedPoints;
         this.state.shapes.forEach((shape) => {  //todo: refactor forEach to some?
           let obj = shape.selectedObjectAt(point);
           if (obj) {
@@ -282,6 +342,8 @@ class DrawArea extends React.Component {
 
             if (selected.shape_ === "line") {
               lines.push(selected);
+            } else {
+              sPoints.push(selected);
             }
             //break
           }
@@ -290,8 +352,9 @@ class DrawArea extends React.Component {
         this.setState({
           selected: selected,
           selectedLines: lines,
+          selectedPoints: sPoints,
         });
-        console.log('selectedLines', this.state.selectedLines);
+        //console.log('selectedLines', this.state.selectedLines);
         break;
       case "SELECT":
         selected = undefined;
@@ -302,7 +365,7 @@ class DrawArea extends React.Component {
           }
         })
         //console.log(this.state.shapes.every(shape => shape.shapeContains(point)===false));
-        if (this.state.shapes.every(shape => shape.shapeContains(point)===false)) {
+        if (this.state.shapes.every(shape => shape.shapeContains(point)===false)) { //if nothing selected then deselect all shapes
           this.state.shapes.forEach((shape) => {
               shape.selected = false;
           })
@@ -362,7 +425,7 @@ class DrawArea extends React.Component {
         averageY = points.length > 1 ? points.reduce(functionAverageY) : undefined;
 
         pivotPoint = {x:320, y:240} //320 and 240 is center for now, could use object centers {x:averageX, y:averageY}
-        console.log("pivot point",pivotPoint);
+        //console.log("pivot point",pivotPoint);
 
         let newShapes = [];
         var pivot = pivotPoint;
@@ -466,20 +529,20 @@ class DrawArea extends React.Component {
           }
 
 
-          this.state.lines.map((line, index) => {
-            var point = this.relativeCoordinatesForEvent(mouseEvent);
-            let d1 = this.distanceSquared(line[0], point)**(1/2);
-            let d2 = this.distanceSquared(line[1], point)**(1/2);
-            let total = this.distanceSquared(line[0], line[1])**(1/2);
-            // console.log(d1+d2);
-            // console.log("total", total)
-
-            //doesnt work for freehand lines
-            if ((d1 + d2) < (total+1) || (d1 + d2) < (total-1)) {
-              // console.log(index);
-            }
-
-          })
+          // this.state.lines.map((line, index) => {
+          //   var point = this.relativeCoordinatesForEvent(mouseEvent);
+          //   let d1 = this.distanceSquared(line[0], point)**(1/2);
+          //   let d2 = this.distanceSquared(line[1], point)**(1/2);
+          //   let total = this.distanceSquared(line[0], line[1])**(1/2);
+          //   // console.log(d1+d2);
+          //   // console.log("total", total)
+          //
+          //   //doesnt work for freehand lines
+          //   if ((d1 + d2) < (total+1) || (d1 + d2) < (total-1)) {
+          //     // console.log(index);
+          //   }
+          //
+          // })
           break;
         case "PAN":
         case "MOVE":
@@ -605,7 +668,7 @@ class DrawArea extends React.Component {
 
     var point = this.relativeCoordinatesForEvent(mouseEvent);
     let oldShapes = this.state.shapes;
-    let oldState = this.state.lines;
+    //let oldState = this.state.lines;
 
     switch (this.state.tool) {
       case "LINE":
@@ -617,6 +680,9 @@ class DrawArea extends React.Component {
       break;
 
       case "BEZIER":
+      case "RECTANGLE":
+        //console.log(this.state.isDrawing);
+        if (!this.state.isDrawing) {break;};
       case "POLYGON":
         oldShapes[oldShapes.length -1].lastPoint(point); //update the last point of the polygon
         this.setState({
@@ -625,20 +691,24 @@ class DrawArea extends React.Component {
         break;
       case "FREEHAND":
         // console.log("old: ", oldState);
-        var lastLine = oldState[oldState.length - 1];  //this can't be a 'let' declaration because it's defined above
-                                                      //I thought it wouldn't matter because JavaScript does everything at runtime
-                                                      //but React seems to have a compile-like phase
-        lastLine.push(point);
-
-        var temp = oldState.slice(0,oldState.length - 1)
-        temp.push(lastLine);
-
-        var newState = temp;
-
-        // console.log("new: ", newState)
-
+        // var lastLine = oldState[oldState.length - 1];  //this can't be a 'let' declaration because it's defined above
+        //                                               //I thought it wouldn't matter because JavaScript does everything at runtime
+        //                                               //but React seems to have a compile-like phase
+        // lastLine.push(point);
+        //
+        // var temp = oldState.slice(0,oldState.length - 1)
+        // temp.push(lastLine);
+        //
+        // var newState = temp;
+        //
+        // // console.log("new: ", newState)
+        //
+        // this.setState({
+        //     lines: newState,
+        // });
+        oldShapes[oldShapes.length - 1].lastPoint(point);
         this.setState({
-            lines: newState,
+          shapes: oldShapes,
         });
         break;
       default:
@@ -649,13 +719,14 @@ class DrawArea extends React.Component {
   handleMouseUp(mouseEvent) {
     let inCanvas = mouseEvent.srcElement ? mouseEvent.srcElement.localName : false;
     let inCanvasBoolean = inCanvas === "svg";
-    //console.log("mouse up");
+    // console.log("mouse up");
+    // console.log(inCanvasBoolean);
 
     this.setState({
       mousedown: false,
     })
 
-    if (inCanvasBoolean) {
+    if (inCanvasBoolean || this.state.tool === "POLYGON" || this.state.tool === "RECTANGLE" || this.state.tool === "FREEHAND") { //this is a hack not sure why it is neccesary
       //console.log(this.state.tool);
       switch (this.state.tool) {
         case "FREEHAND":
@@ -664,8 +735,13 @@ class DrawArea extends React.Component {
         case "EDIT":
           //console.log(this.state.selected);
           break;
-        case "LINE" || "POLYGON":
+        case "POLYGON":
+        case "LINE":
           //do nothing
+          break;
+        case "RECTANGLE":
+          //console.log("mouse going up");
+          this.setState({ isDrawing: false });
           break;
         case "ROTATE": // fall-through, or statement doesn't work
         case "SCALE":
@@ -680,7 +756,7 @@ class DrawArea extends React.Component {
           this.setState( {shapes: allShapes} );
           break;
         case "PAN":
-          console.log(this.state.shapes);
+          //console.log(this.state.shapes);
           break;
         case "ZOOMOUT":
         case "ZOOMIN":
@@ -709,6 +785,12 @@ class DrawArea extends React.Component {
   onClickPolygon() {
     this.setState({
         tool: "POLYGON",
+    });
+  }
+
+  onClickRectangle() {
+    this.setState({
+        tool: "RECTANGLE",
     });
   }
 
@@ -772,6 +854,8 @@ class DrawArea extends React.Component {
     });
   }
 
+//------------------------constraints------------------------
+
   toZero() { //assumes selected is a point
     this.state.selected.y = this.state.selected.x = 0;
     this.setState({}); //call render
@@ -783,6 +867,16 @@ class DrawArea extends React.Component {
     this.setState({}); //call render
   }
 
+  makeHorizontal() {
+    let oldConstraints = this.state.constraints;
+    let c = HorizontalLineConstraint(this.state.selectedLines[this.state.selectedLines.length-1]);
+    oldConstraints.push(c);
+    this.setState({
+      constraints: oldConstraints,
+    });
+    this.constraintUpdate();
+  }
+
   makeParallel() {
     let oldConstraints = this.state.constraints;
     let c = ParallelLineConstraint(this.state.selectedLines[this.state.selectedLines.length-2], this.state.selectedLines[this.state.selectedLines.length-1]);
@@ -792,7 +886,9 @@ class DrawArea extends React.Component {
     });
     this.constraintUpdate();
   }
+//------------------------------------------------
 
+//------------------------component mount functions------------------------
   componentDidMount() {
     document.addEventListener("mouseup", this.handleMouseUp);
   }
@@ -800,6 +896,8 @@ class DrawArea extends React.Component {
   componentWillUnmount() {
     document.removeEventListener("mouseup", this.handleMouseUp);
   }
+
+//------------------------------------------------
 
   handleDownload() {
     let filename = "test.svg";
@@ -809,7 +907,7 @@ class DrawArea extends React.Component {
       lineArray = lineArray.concat(shape.toLines());
     });
 
-    lineArray = lineArray.concat(this.state.lines);
+    //lineArray = lineArray.concat(this.state.lines);
 
     let svgString = lineArray.map(line => `<path d="M ${line.map(p => `${p['x']} ${p['y']}`)}" stroke-linejoin="round" stroke-linecap="round" stroke-width="1px" stroke="black" fill="none"/>`);
 
@@ -832,6 +930,85 @@ class DrawArea extends React.Component {
     else {
         pom.click();
     }
+  }
+
+  handleSave() {
+    let filename = "test.txt";
+    let state = this.state;
+    let text = JSON.stringify(state);
+
+    // console.log(state);
+    // console.log(text);
+    // console.log(Object.getOwnPropertyNames(state.shapes[0]))
+
+    var pom = document.createElement('a');
+    pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    pom.setAttribute('download', filename);
+
+    if (document.createEvent) {
+        var event = document.createEvent('MouseEvents');
+        event.initEvent('click', true, true);
+        pom.dispatchEvent(event);
+    }
+    else {
+        pom.click();
+    }
+  }
+
+  handleUpload(e) { //only works for polygons -shapes- now, needs to maintain constraints as well
+    e.preventDefault();
+    let files = e.target.files;
+    let file = files[0];
+    let loadedFileIntoState = [];
+
+    var self = this;
+    //console.log(this.state)
+    let stateLoaded = (stateOfInterest) => {
+      if (stateOfInterest.length === 1) {
+        let oldState = JSON.parse(stateOfInterest[0]);
+        let state = this.state;
+        let oldShapes = oldState.shapes;
+
+        let newShapes = oldShapes.map(oldShape => {
+          //console.log(oldShape.shape_);
+          let newShape = undefined;
+
+          switch (oldShape.shape_) {   //different shapes can be added here
+            case "freehand":
+            case "polygon":
+              newShape = new Polygon;
+              break;
+            case "rectangle":
+              newShape = new Rectangle;
+              break;
+          }
+
+          newShape = Object.assign( Object.create( Object.getPrototypeOf(newShape)), oldShape); //this is so we maintain class methods
+          return newShape
+        })
+
+        this.setState({shapes:newShapes});
+      } else {
+        //console.log("come again!");
+        stateLoaded(stateOfInterest);
+      }
+    }
+
+    var reader = new FileReader();
+    reader.onload = (event) => {
+        const file = event.target.result;
+        const allLines = file.split(/\r\n|\n/);
+        // Reading line by line
+        allLines.map((line) => {
+            //console.log(line);
+            loadedFileIntoState.push(line);
+            stateLoaded(loadedFileIntoState);
+        });
+    };
+
+    reader.readAsText(files[0]);
+    //console.log(loadedFileIntoState);
+    //this.setState(loadedFileIntoState[0]);
   }
 
   constraintUpdate() {
@@ -899,6 +1076,9 @@ class DrawArea extends React.Component {
         })
         this.setState( {shapes: unselectedShapes, newShapes:[]} );
         break;
+      case 84: //test
+        //console.log(this.state.file)
+        break;
       default:
         return;
     }
@@ -954,6 +1134,8 @@ class DrawArea extends React.Component {
     }
 
     let activeButtonStyle = {
+      outline: "none",
+      boxSizing: "border-box",
       borderTop: "none",
       background: "#EBBC14",
       padding: "4px 8px",
@@ -968,6 +1150,8 @@ class DrawArea extends React.Component {
     }
 
     let inactiveButtonStyle = {
+      outline: "none",
+      boxSizing: "border-box",
       borderTop: "none",
       background: "#add8e6",
       padding: "4px 8px",
@@ -982,6 +1166,8 @@ class DrawArea extends React.Component {
     }
 
     let defaultButtonStyle = {
+      outline: "none",
+      boxSizing: "border-box",
       borderTop: "none",
       background: "#A38FDF",
       padding: "4px 8px",
@@ -996,6 +1182,8 @@ class DrawArea extends React.Component {
     }
 
     let downloadButtonStyle = {
+      outline: "none",
+      boxSizing: "border-box",
       borderTop: "none",
       background: "#E6926E",
       padding: "4px 8px",
@@ -1024,15 +1212,15 @@ class DrawArea extends React.Component {
           onKeyDown={(e) => this.handleKeyPress(e)}
           tabIndex="0"
         >
-          <Drawing lines={this.state.lines}
-                   shapes={this.state.shapes}
+          <Drawing shapes={this.state.shapes}
                    newShapes={this.state.newShapes}/>
         </div>
 
         <table style={{float:"left"}}>
           <tbody>
-            <tr><td><h5>Tools</h5></td></tr>
+            <tr><td><b>Tools</b></td></tr>
             <tr><td><button style={this.state.tool === "FREEHAND" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickFreeHand(e)}>Free Hand</button></td></tr>
+            <tr><td><button style={this.state.tool === "RECTANGLE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickRectangle(e)}>Rectangle</button></td></tr>
             <tr><td><button style={this.state.tool === "POLYGON" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickPolygon(e)}>Polygon</button></td></tr>
             <tr><td><button style={this.state.tool === "BEZIER" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickBezier(e)}>Bezier</button></td></tr>
             <tr><td><button style={this.state.tool === "EDIT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickEdit(e)}>Edit</button></td></tr>
@@ -1044,18 +1232,27 @@ class DrawArea extends React.Component {
             <tr><td><button style={this.state.tool === "ZOOMOUT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickZoomOut(e)}>Zoom Out</button></td></tr>
             <tr><td><button style={this.state.tool === "PAN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickPan(e)}>Pan</button></td></tr>
             <tr><td><button style={this.state.tool === undefined ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickNoTool(e)}>No Tool</button></td></tr>
-            <tr><td><h5>Constraints</h5></td></tr>
+            <tr><td><b>Constraints</b></td></tr>
             <tr><td><button style={defaultButtonStyle} onClick={(e) => this.toZero(e)}>To Zero</button></td></tr>
-            <tr><td><button style={defaultButtonStyle} onClick={(e) => this.horizontal(e)}>Horizontal</button></td></tr>
+            <tr><td><button style={defaultButtonStyle} onClick={(e) => this.makeHorizontal(e)}>Horizontal</button></td></tr>
             <tr><td><button style={defaultButtonStyle} onClick={(e) => this.makeParallel(e)}>Make Parallel</button></td></tr>
-            <tr><td><h5>Export</h5></td></tr>
+            <tr><td><b>File</b></td></tr>
             <tr><td><button style={downloadButtonStyle} onClick={(e) => this.handleDownload(e)}>Download SVG</button></td></tr>
+            <tr><td><button style={downloadButtonStyle} onClick={(e) => this.handleSave(e)}>Save</button></td></tr>
+            <tr><td>
+              <p style={downloadButtonStyle}>Upload: <input type="file" name="uploadedFile" onChange={(e) => this.handleUpload(e)}/></p>
+            </td></tr>
           </tbody>
         </table>
       </div>
     );
   }
 }
+
+// <form onSubmit={(e) => this.handleUpload(e)}>
+//     <button style={downloadButtonStyle}>Upload</button>
+//     <input type="file" name="uploadedFile" />
+// </form>
 
 class App extends Component {
   render() {

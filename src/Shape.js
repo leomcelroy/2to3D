@@ -167,6 +167,231 @@ class Polygon { //add another end capability to make polylines, remove line tool
   }
 } //end Polygon()
 
+class Rectangle {
+  constructor(point) {
+    this.shape_ = 'rectangle';
+    this.points_ = [];
+    this.pointSelectDistance_ = 15; //todo: setter / getter
+    this.lineSelectDistance_ = 14;
+    this.selected = false;
+
+    if (point) {
+      this.points_.push(point);
+      this.points_.push(point);
+      this.points_.push(point);
+      this.points_.push(point);
+    }
+  }
+
+  closed() {return true};
+
+  lastPoint(p) {  //if arg is specified, sets the last point of the rectangle and returns this
+
+    if (!p) {
+      return this.points_[this.points_.length -1];
+    } else {
+      let firstpoint = this.points_[0]
+      let lastpoint = {'x': p.x, 'y': p.y};
+
+      let p2 = {'x': firstpoint.x, 'y': lastpoint.y};
+      let p3 = {'x': lastpoint.x, 'y': firstpoint.y};
+
+      this.points_[1] = p2;
+      this.points_[2] = p3;
+
+      this.points_[3] = lastpoint;
+    }
+
+    return this;
+  }
+
+  points(points) {
+    if (points === undefined) {
+      return this.points_;
+    }
+    this.points_ = points;
+  }
+
+  lockDistance(d) { if(d){ this.lockDistance_ = d; return this} return this.lockDistance_};
+
+  toLines() {
+    let lines = []
+    lines.push([this.points_[0], this.points_[1]]);
+    lines.push([this.points_[1], this.points_[3]]);
+    lines.push([this.points_[2], this.points_[0]]);
+    lines.push([this.points_[3], this.points_[2]]);
+
+    return lines;
+  };
+
+  select() {
+    return this.selected = !this.selected;
+  }
+
+  selectedObjectAt(point) {
+    //try points
+    for (var i=0; i < this.points_.length; i++) {
+      let d1 = distanceSquared(point, this.points_[i]);
+      if (d1 < this.pointSelectDistance_**2) {
+        // console.log('point!');
+        // console.log(i);
+        if (this.closed(this)) {
+          if (i === 0) { //this is a hack double select only works with end point for some reason
+            i = this.points_.length - 1;
+          }
+          if (i === this.points_.length-1) {
+            return [this.points_[i], this.points_[0]];
+          } else {
+            return this.points_[i];
+          }
+        } else {
+          return this.points_[i];
+        }
+      }
+    }
+    //try lines
+    for (var i=0; i < this.points_.length-1; i++) {
+      let d1 = distanceSquared(point, this.points_[i]);
+      let d2 = distanceSquared(point, this.points_[i+1]);
+      if (onLine(point, this.points_[i], this.points_[i+1], this.lineSelectDistance_)) {
+        return new Line(this.points_[i], this.points_[i+1]);
+      }
+    }
+  }
+
+  shapeContains(point) {
+    let polyRawLines = this.toLines();
+    let polyLines = polyRawLines.map(line => new Line(line[0],line[1]))
+    let contained = polyLines.map(line => line.shapeContains(point));
+
+    return contained.some(entry => entry===true);
+  }
+
+  rendersPath() {
+    return false;
+  }
+}
+
+class Freehand {
+  constructor(point) {
+    this.shape_ = 'freehand';
+    this.points_ = [];
+    this.pointSelectDistance_ = 5; //todo: setter / getter
+    this.lineSelectDistance_ = 2;
+    this.selected = false;
+
+    if (point) {
+      this.points_.push(point);
+      this.points_.push(point);
+      this.points_.push(point);
+      this.points_.push(point);
+    }
+  }
+
+  closed() {return true};
+
+  lastPoint(p) {  //if arg is specified, sets the last point of the rectangle and returns this
+
+    if (!p) {
+      return this.points_[this.points_.length -1];
+    } else {
+      this.points_.push(p);
+    }
+
+    return this;
+  }
+
+  points(points) {
+    if (points === undefined) {
+      return this.points_;
+    }
+    this.points_ = points;
+  }
+
+  lockDistance(d) { if(d){ this.lockDistance_ = d; return this} return this.lockDistance_};
+
+  toLines() {
+    let lines = []
+    for (let i = 0; i < this.points_.length -1; i++) {
+      lines.push([this.points_[i], this.points_[i+1]]);
+    }
+    return lines;
+  };
+
+  select() {
+    return this.selected = !this.selected;
+  }
+
+  selectedObjectAt(point) {
+    //try points
+    for (var i=0; i < this.points_.length; i++) {
+      let d1 = distanceSquared(point, this.points_[i]);
+      if (d1 < this.pointSelectDistance_**2) {
+        // console.log('point!');
+        // console.log(i);
+        if (this.closed(this)) {
+          if (i === 0) { //this is a hack double select only works with end point for some reason
+            i = this.points_.length - 1;
+          }
+          if (i === this.points_.length-1) {
+            return [this.points_[i], this.points_[0]];
+          } else {
+            return this.points_[i];
+          }
+        } else {
+          return this.points_[i];
+        }
+      }
+    }
+    //try lines
+    for (var i=0; i < this.points_.length-1; i++) {
+      let d1 = distanceSquared(point, this.points_[i]);
+      let d2 = distanceSquared(point, this.points_[i+1]);
+      if (onLine(point, this.points_[i], this.points_[i+1], this.lineSelectDistance_)) {
+        return new Line(this.points_[i], this.points_[i+1]);
+      }
+    }
+  }
+
+  shapeContains(point) {
+    let polyRawLines = this.toLines();
+    let polyLines = polyRawLines.map(line => new Line(line[0],line[1]))
+    let contained = polyLines.map(line => line.shapeContains(point));
+
+    return contained.some(entry => entry===true);
+  }
+
+  rendersPath() {
+    return false;
+  }
+}
+
+class Point {
+  constructor(point) {
+    this.shape_ = 'point';
+    this.points_ = [];
+    this.x = point ? point.x : undefined;
+    this.y = point ? point.y : undefined;
+    this.pointSelectDistance_ = 5; //todo: setter / getter
+    this.selected = false;
+
+    if (point) {
+      this.points_.push(point);
+    }
+
+  }
+
+  closed() {return true};
+
+  select() {
+    return this.selected = !this.selected;
+  }
+
+  rendersPath() {
+    return false;
+  }
+}
+
 class Bezier {
   constructor(start, c1, c2, end) {
     this.start_ = start;
@@ -228,6 +453,8 @@ function onLine(point, p1, p2, buffer) {
   return Math.sqrt(d1) + Math.sqrt(d2) < Math.sqrt(distanceSquared(p1, p2)) + buffer
 }
 
+//-------------------------------constraints-------------------------------
+
 function ParallelLineConstraint(line1, line2) {
   let constraint = {
     line1,
@@ -244,9 +471,26 @@ function ParallelLineConstraint(line1, line2) {
   return constraint
 }
 
+function HorizontalLineConstraint(line1) {
+  let constraint = {
+    line1,
+  }
+  constraint.satisfy = function() {
+    if (this.line1.angle() === 0) {
+      return false;
+    }
+    this.line1.angle(0);
+    return true;
+  }
+
+  return constraint
+}
+
 function LineAngleConstraint(line, angle) { //a quick example?
 
 }
+
+//-------------------------------helper functions-------------------------------
 
 function distanceSquared(p1, p2) {
   return (p1.x - p2.x)**2 + (p1.y - p2.y)**2;
@@ -259,4 +503,4 @@ function pointEqual(p1, p2) {
 
 
 
-export {Line, Polygon, ParallelLineConstraint, Bezier};
+export {Line, Polygon, Bezier, Rectangle, Freehand, Point, ParallelLineConstraint, HorizontalLineConstraint};
