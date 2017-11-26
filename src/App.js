@@ -312,20 +312,32 @@ class DrawArea extends React.Component {
         }
         break;
       case "EDIT": //need to be able to select points and lines
-        let selected = undefined;
+        let selected = [];
         let lines = this.state.selectedLines;
         let sPoints = this.state.selectedPoints;
         this.state.shapes.forEach((shape) => {  //todo: refactor forEach to some?
           let obj = shape.selectedObjectAt(point);
-          if (obj) {
-            selected = obj;
-            console.log(obj);
 
-            if (selected.shape_ === "line") {
-              lines.push(selected);
+          if (obj) {
+            if (Array.isArray(obj)) {
+              selected.push(obj[0]);
+              selected.push(obj[1]);
+
+              if (selected[selected.length-1].shape_ === "line") {
+                lines.push(obj[0]);
+              } else {
+                sPoints.push(obj[0]);
+              }
             } else {
-              sPoints.push(selected);
+              selected.push(obj);
+
+              if (selected[selected.length-1].shape_ === "line") {
+                lines.push(obj);
+              } else {
+                sPoints.push(obj);
+              }
             }
+            console.log(obj);
             //break
           }
         });
@@ -494,17 +506,21 @@ class DrawArea extends React.Component {
     if (!this.state.isDrawing) {
       switch (this.state.tool) {
         case "EDIT": //TODO: change this to use coincident constraint with pointer
-          if (this.state.mousedown && this.state.selected && this.isPointOrArrayOfPoints(this.state.selected)) {
+          if (this.state.mousedown && this.state.selected) {
             // console.log("input", point)
-            if (Array.isArray(this.state.selected) === false) {
-              this.state.selected.x = point.x;
-              this.state.selected.y = point.y;
-              this.setState({});
-            } else {
-              for (var i=0; i < this.state.selected.length; i++) {
-                this.state.selected[i].x = point.x;
-                this.state.selected[i].y = point.y;
-                this.setState({});
+            for (var i=0; i < this.state.selected.length; i++) {
+              if (this.isPointOrArrayOfPoints(this.state.selected[i])) {
+                if (Array.isArray(this.state.selected[i]) === false) {
+                  this.state.selected[i].x = point.x;
+                  this.state.selected[i].y = point.y;
+                  this.setState({});
+                } else {
+                  for (var j=0; j < this.state.selected[i].length; j++) {
+                    this.state.selected[i][j].x = point.x;
+                    this.state.selected[i][j].y = point.y;
+                    this.setState({});
+                  }
+                }
               }
             }
           }
@@ -700,6 +716,7 @@ class DrawArea extends React.Component {
   handleMouseUp(mouseEvent) {
     let inCanvas = mouseEvent.srcElement ? mouseEvent.srcElement.localName : false;
     let inCanvasBoolean = inCanvas === "svg";
+    let oldShapes = this.state.shapes;
     // console.log("mouse up");
     // console.log(inCanvasBoolean);
 
@@ -716,7 +733,20 @@ class DrawArea extends React.Component {
         case "EDIT":
           //console.log(this.state.selected);
           break;
-        case "POLYGON":
+        case "POLYGON": //close polygon using constraints
+          let lastShape = oldShapes[oldShapes.length -1];
+          if (lastShape.closed()) {
+            let points = lastShape.points_;
+            let lp = points.length;
+            let oldConstraints = this.state.constraints;
+            let c = CoincidentConstraint(points[0], points[lp-1]);
+            oldConstraints.push(c);
+            this.setState({
+              constraints: oldConstraints,
+            });
+            this.constraintUpdate();
+          }
+          break;
         case "LINE":
           //do nothing
           break;
@@ -1028,6 +1058,22 @@ class DrawArea extends React.Component {
           return newShape
         })
 
+        this.setState({
+          isDrawing: false,
+          tool: undefined,
+          //lines: [], //will be a list of lists
+          start: undefined,
+          shapes: [], //will be a list of shapes
+          selected: undefined, //will be whatever object is 'selected'
+          constraints: [], //list of constraint objects
+          pivotPoint: undefined,
+          originalShapes: undefined,
+          newShapes: [],
+          selectedLines: [],
+          selectedPoints: [],
+          originalPoint: undefined,
+        });
+
         this.setState({shapes:newShapes});
       } else {
         //console.log("come again!");
@@ -1292,6 +1338,7 @@ class DrawArea extends React.Component {
               <td>
                 <button style={defaultButtonStyle} onClick={(e) => this.makeParallel(e)}>Parallel</button>
                 <button style={defaultButtonStyle} onClick={(e) => this.makePerpendicular(e)}>Perpendicular</button>
+                <button style={defaultButtonStyle} onClick={(e) => this.test(e)}>TODO: Fixed</button>
               </td>
             </tr>
             <tr><td><b>File</b></td></tr>

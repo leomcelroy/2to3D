@@ -1,3 +1,5 @@
+import {CoincidentConstraint, ParallelLineConstraint, PerpendicularLineConstraint, VerticalLineConstraint, HorizontalLineConstraint, angle} from './GeometricConstraintSolver.js';
+
 //look at maker.js?
 
 class Line {
@@ -118,6 +120,7 @@ class Polygon { //add another end capability to make polylines, remove line tool
       p = {'x': this.points_[0].x, 'y': this.points_[0].y}; //create a new point so we don't get double referencing
     }
     this.points_[this.points_.length -1] = p;
+
     return this;
   }
 
@@ -127,9 +130,9 @@ class Polygon { //add another end capability to make polylines, remove line tool
     //try points
     for (var i=0; i < this.points_.length; i++) {
       let d1 = distanceSquared(point, this.points_[i]);
-      if (d1 < this.pointSelectDistance_**2) {
-        // console.log('point!');
-        // console.log(i);
+      if (d1 < this.pointSelectDistance_**2) { //polygon is now closed using both this and constraints
+        console.log('point!');
+        console.log(i);
         if (this.closed(this)) {
           if (i === 0) { //this is a hack double select only works with end point for some reason
             i = this.points_.length - 1;
@@ -142,6 +145,7 @@ class Polygon { //add another end capability to make polylines, remove line tool
         } else {
           return this.points_[i];
         }
+        //return this.points_[i]; //use this to just use constraints
       }
     }
     //try lines
@@ -233,20 +237,21 @@ class Rectangle { //TODO: This should use constraints to maintain form
     for (var i=0; i < this.points_.length; i++) {
       let d1 = distanceSquared(point, this.points_[i]);
       if (d1 < this.pointSelectDistance_**2) {
-        // console.log('point!');
-        // console.log(i);
-        if (this.closed(this)) {
-          if (i === 0) { //this is a hack double select only works with end point for some reason
-            i = this.points_.length - 1;
-          }
-          if (i === this.points_.length-1) {
-            return [this.points_[i], this.points_[0]];
-          } else {
-            return this.points_[i];
-          }
-        } else {
-          return this.points_[i];
-        }
+        // // console.log('point!');
+        // // console.log(i);
+        // if (this.closed(this)) {
+        //   if (i === 0) { //this is a hack double select only works with end point for some reason
+        //     i = this.points_.length - 1;
+        //   }
+        //   if (i === this.points_.length-1) {
+        //     return [this.points_[i], this.points_[0]];
+        //   } else {
+        //     return this.points_[i];
+        //   }
+        // } else {
+        //   return this.points_[i];
+        // }
+        return this.points_[i];
       }
     }
     //try lines

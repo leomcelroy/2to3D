@@ -39,6 +39,7 @@ function angle(line1, line2) {
 
 // constraints
 function CoincidentConstraint(point1, point2) {
+
   let constraint = {
     point1,
     point2,
@@ -52,8 +53,8 @@ function CoincidentConstraint(point1, point2) {
     this.point2.x = this.point1.x;
     this.point2.y = this.point1.y;
 
-    this.point1.x = this.point1.x;
-    this.point1.y = this.point1.y;
+    // this.point1.x = this.point1.x;
+    // this.point1.y = this.point1.y;
 
     return true;
   }
