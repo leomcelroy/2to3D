@@ -244,7 +244,7 @@ class DrawArea extends React.Component {
             isDrawing: true,
         });
         break;
-      case "LINE":
+      case "LINE": //TODO: Make function like Polygon but using constraints
         if (this.state.isDrawing) {
           this.setState({
             isDrawing: false
@@ -369,7 +369,20 @@ class DrawArea extends React.Component {
         var point = this.relativeCoordinatesForEvent(mouseEvent);
         let originalShapes = [];
         this.state.shapes.forEach(shape => {
-          let newShape = new Polygon;
+          let newShape = undefined;
+          switch (shape.shape_) {   //different shapes can be added here
+            case "freehand":
+            case "polygon":
+              newShape = new Polygon;
+              break;
+            case "rectangle":
+              newShape = new Rectangle;
+              break;
+            case "line":
+              console.log("shape: ", shape.points());
+              newShape = new Line;
+              break;
+          }
           newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
           originalShapes.push(newShape);
         })
@@ -382,10 +395,23 @@ class DrawArea extends React.Component {
         let points = [];
 
         this.state.shapes.forEach(shape => {
-          let newShape = new Polygon;
+          let newShape = undefined;
+          switch (shape.shape_) {   //different shapes can be added here
+            case "freehand":
+            case "polygon":
+              newShape = new Polygon;
+              break;
+            case "rectangle":
+              newShape = new Rectangle;
+              break;
+            case "line":
+              newShape = new Line;
+              break;
+          }
 
           if (shape.selected) {
-            points = points.concat(shape.points_);
+            //points = (shape.shape_ === "line") ? points.concat(shape.points()) : points.concat(shape.points());
+            points = points.concat(shape.points());
           }
 
           newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
@@ -406,9 +432,22 @@ class DrawArea extends React.Component {
         points = [];
 
         this.state.shapes.forEach(shape => {
-          let newShape = new Polygon;
+          let newShape = undefined;
+          switch (shape.shape_) {   //different shapes can be added here
+            case "freehand":
+            case "polygon":
+              newShape = new Polygon;
+              break;
+            case "rectangle":
+              newShape = new Rectangle;
+              break;
+            case "line":
+              newShape = new Line;
+              break;
+          }
 
-          points = points.concat(shape.points_);
+          //points = (shape.shape_ === "line") ? points.concat(shape.points()) : points.concat(shape.points());
+          points = points.concat(shape.points());
 
           newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
           originalShapes.push(newShape);
@@ -439,10 +478,23 @@ class DrawArea extends React.Component {
           originalShapes.forEach((shape) => {
 
             const functionScale = (factor, shape) => {
-              let newShape = new Polygon;
+              let newShape = undefined;
+              switch (shape.shape_) {   //different shapes can be added here
+                case "freehand":
+                case "polygon":
+                  newShape = new Polygon;
+                  break;
+                case "rectangle":
+                  newShape = new Rectangle;
+                  break;
+                case "line":
+                  newShape = new Line;
+                  break;
+              }
+
               newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
 
-              let newPoints = newShape.points_.map(shapePoint => {
+              let newPoints = newShape.points().map(shapePoint => { //TODO: fix for line
                 //console.log(pivot);
                 let angle = this.functionGetAngle(shapePoint, pivot) + Math.PI;
                 let dist = this.distance(shapePoint, pivot);
@@ -450,7 +502,7 @@ class DrawArea extends React.Component {
                 return newPoint;
               })
 
-                newShape.points_ = newPoints;
+                newShape.points(newPoints);
 
                 return newShape;
               }
@@ -549,7 +601,20 @@ class DrawArea extends React.Component {
 
             this.state.originalShapes.forEach((shape) => {
               if (this.state.tool === "PAN" || shape.selected) {
-                let newShape = new Polygon;
+                let newShape = undefined;
+                switch (shape.shape_) {   //different shapes can be added here
+                  case "freehand":
+                  case "polygon":
+                    newShape = new Polygon;
+                    break;
+                  case "rectangle":
+                    newShape = new Rectangle;
+                    break;
+                  case "line":
+                    newShape = new Line;
+                    break;
+                }
+
                 newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
                 let newPoints = newShape.points().map(shapePoint => {
                   //console.log(point.x-this.state.pivotPoint.x, point.y-this.state.pivotPoint.y)
@@ -573,10 +638,22 @@ class DrawArea extends React.Component {
           break;
         case "ROTATE":
           const functionRotate = (angle, pivot, shape) => {
-            let newShape = new Polygon;
+            let newShape = undefined;
+            switch (shape.shape_) {   //different shapes can be added here
+              case "freehand":
+              case "polygon":
+                newShape = new Polygon;
+                break;
+              case "rectangle":
+                newShape = new Rectangle;
+                break;
+              case "line":
+                newShape = new Line;
+                break;
+            }
             newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
 
-            let newPoints = newShape.points_.map(shapePoint => {
+            let newPoints = newShape.points().map(shapePoint => { //TODO: fix for lines to points()
 
               let distanceToPivot = this.distance(shapePoint, pivot);
               let angleWithPivot = this.functionGetAngle(shapePoint, pivot);
@@ -589,7 +666,7 @@ class DrawArea extends React.Component {
               return newPoint;
             })
 
-              newShape.points_ = newPoints;
+              newShape.points(newPoints);
 
               return newShape;
             }
@@ -633,17 +710,29 @@ class DrawArea extends React.Component {
               if (shape.selected) {
 
                 const functionScale = (factor, shape) => {
-                  let newShape = new Polygon;
+                  let newShape = undefined;
+                  switch (shape.shape_) {   //different shapes can be added here
+                    case "freehand":
+                    case "polygon":
+                      newShape = new Polygon;
+                      break;
+                    case "rectangle":
+                      newShape = new Rectangle;
+                      break;
+                    case "line":
+                      newShape = new Line;
+                      break;
+                  }
                   newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
 
-                  let newPoints = newShape.points_.map(shapePoint => {
+                  let newPoints = newShape.points().map(shapePoint => {
                     let angle = this.functionGetAngle(shapePoint, pivot) + Math.PI;
                     let dist = this.distance(shapePoint, pivot);
                     let newPoint = {x:pivot.x+Math.cos(angle)*factor*dist, y:pivot.y+Math.sin(angle)*factor*dist};
                     return newPoint;
                   })
 
-                    newShape.points_ = newPoints;
+                    newShape.points(newPoints);
 
                     return newShape;
                   }
@@ -735,8 +824,10 @@ class DrawArea extends React.Component {
           break;
         case "POLYGON": //close polygon using constraints
           let lastShape = oldShapes[oldShapes.length -1];
-          if (lastShape.closed()) {
-            let points = lastShape.points_;
+          let b = oldShapes.length > 0 ? lastShape.closed() : false;
+
+          if (b) {
+            let points = lastShape.points();
             let lp = points.length;
             let oldConstraints = this.state.constraints;
             let c = CoincidentConstraint(points[0], points[lp-1]);
@@ -1124,6 +1215,27 @@ class DrawArea extends React.Component {
             return;
         }
         break;
+      case 27: //esc
+        switch (this.state.tool) {
+          case "POLYGON":
+              let oldShapes = this.state.shapes;
+              let lastShape = oldShapes[oldShapes.length -1];
+              //console.log("lastShape", lastShape);
+
+              let points = lastShape.points().slice(0, lastShape.points().length - 1);
+              //console.log("lastShape Points", points);
+
+              lastShape.points(points);
+              //console.log("oldShapes", oldShapes);
+
+              this.setState({
+                isDrawing:false,
+              })
+            break;
+          default:
+            return;
+        }
+        break;
       case 80: //p
         this.setState({tool:"POLYGON"})
         break;
@@ -1306,6 +1418,7 @@ class DrawArea extends React.Component {
         <table style={{float:"left"}}>
           <tbody>
             <tr><td><b>Tools</b></td></tr>
+            <tr><td><button style={this.state.tool === "LINE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickLine(e)}>Line</button></td></tr>
             <tr><td><button style={this.state.tool === "FREEHAND" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickFreeHand(e)}>Free Hand</button></td></tr>
             <tr><td><button style={this.state.tool === "RECTANGLE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickRectangle(e)}>Rectangle</button></td></tr>
             <tr><td><button style={this.state.tool === "POLYGON" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickPolygon(e)}>Polygon</button></td></tr>
@@ -1344,9 +1457,8 @@ class DrawArea extends React.Component {
             <tr><td><b>File</b></td></tr>
             <tr><td><button style={downloadButtonStyle} onClick={(e) => this.handleDownload(e)}>Download SVG</button></td></tr>
             <tr><td><button style={downloadButtonStyle} onClick={(e) => this.handleSave(e)}>Save</button></td></tr>
-            <tr><td>
-              <p style={downloadButtonStyle}>Upload: <input type="file" name="uploadedFile" onChange={(e) => this.handleUpload(e)}/></p>
-            </td></tr>
+            <tr><td><div style={downloadButtonStyle}>Upload: <input type="file" name="uploadedFile" onChange={(e) => this.handleUpload(e)}/></div></td></tr>
+            <tr><td><a href="http://fabmodules.org/" target="_blank" style={downloadButtonStyle}>fab modules</a></td></tr>
           </tbody>
         </table>
       </div>

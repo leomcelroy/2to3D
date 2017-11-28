@@ -14,9 +14,9 @@ class Line {
     this.pointSelectDistance_ = 15; //todo: setter / getter
     this.lineSelectDistance_ = 14;
     this.objectSelectDistance_ = 5;
-    this.length_ = Math.sqrt(distanceSquared(this.p1_, this.p2_));
+    //this.length_ = Math.sqrt(distanceSquared(this.p1_, this.p2_));
     this.selected = false;
-    //this.points_ = [p1, p2];
+    //this.points_ = [];
   }
 
   points(points) {
@@ -25,6 +25,8 @@ class Line {
     }
     this.p1_ = points[0];
     this.p2_ = points[1];
+
+    //this.points_ = points;
   }
 
   p1(p) { if (p){ this.p1_ = p; this.updateLength(); return this;} return this.p1_};
@@ -412,6 +414,10 @@ class Bezier {
     return this.points();
   }
 
+  closed() {
+    return false;
+  }
+
   shapeContains(point) {
     return onLine(point, this.start_, this.end_, this.lineSelectDistance_);
   }
@@ -434,6 +440,8 @@ class Bezier {
     return true;
   }
 }
+
+//-------------------------------helper-------------------------------
 
 function onLine(point, p1, p2, buffer) {
   let d1 = distanceSquared(point, p1);
