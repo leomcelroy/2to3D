@@ -958,10 +958,6 @@ class DrawArea extends React.Component {
 
 //------------------------constraints------------------------
 
-  toZero() { //assumes selected is a point
-    this.state.selected.y = this.state.selected.x = 0;
-    this.setState({}); //call render
-  }
 
   test() {
     //testing
@@ -1435,8 +1431,7 @@ class DrawArea extends React.Component {
             <tr><td><b>Constraints</b></td></tr>
             <tr>
               <td>
-                <button style={defaultButtonStyle} onClick={(e) => this.toZero(e)}>To Zero</button>
-                <button style={defaultButtonStyle} onClick={(e) => this.toZero(e)}>TODO: Dimension</button>
+                <button style={defaultButtonStyle} onClick={(e) => {}}>TODO: Dimension</button>
                 <button style={defaultButtonStyle} onClick={(e) => this.coincident(e)}>Coincident</button>
               </td>
             </tr>

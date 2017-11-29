@@ -95,6 +95,7 @@ function PerpendicularLineConstraint(line1, line2) {
 }
 
 function HorizontalLineConstraint(line1) {
+  console.log(line1)
   let constraint = {
     line1,
   }
