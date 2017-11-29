@@ -870,71 +870,9 @@ class DrawArea extends React.Component {
     }
   }
 
-  //TODO: REFACTOR ALL OF THESE INTO ONE
-
-  onClickFreeHand() {
+  onClickTool(toolName) {
     this.setState({
-        tool: "FREEHAND",
-    });
-  }
-
-  onClickLine() {
-    this.setState({
-      tool: "LINE",
-    });
-  }
-
-  onClickPolygon() {
-    this.setState({
-        tool: "POLYGON",
-    });
-  }
-
-  onClickRectangle() {
-    this.setState({
-        tool: "RECTANGLE",
-    });
-  }
-
-  onClickSelect() {
-    this.setState({
-      tool: "SELECT",
-    });
-  }
-
-  onClickMove() {
-    this.setState({
-      tool: "MOVE",
-    });
-  }
-
-  onClickPan() {
-    this.setState({
-      tool: "PAN",
-    });
-  }
-
-  onClickScale() {
-    this.setState({
-      tool: "SCALE",
-    });
-  }
-
-  onClickRotate() {
-    this.setState({
-      tool: "ROTATE",
-    });
-  }
-
-  onClickEdit() {
-    this.setState({
-      tool: "EDIT",
-    });
-  }
-
-  onClickBezier() {
-    this.setState({
-      tool: "BEZIER",
+      tool: toolName
     });
   }
 
@@ -944,17 +882,6 @@ class DrawArea extends React.Component {
     });
   }
 
-  onClickZoomIn() {
-    this.setState({
-        tool: "ZOOMIN",
-    });
-  }
-
-  onClickZoomOut() {
-    this.setState({
-        tool: "ZOOMOUT",
-    });
-  }
 
 //------------------------constraints------------------------
 
@@ -1414,19 +1341,19 @@ class DrawArea extends React.Component {
         <table style={{float:"left"}}>
           <tbody>
             <tr><td><b>Tools</b></td></tr>
-            <tr><td><button style={this.state.tool === "LINE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickLine(e)}>Line</button></td></tr>
-            <tr><td><button style={this.state.tool === "FREEHAND" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickFreeHand(e)}>Free Hand</button></td></tr>
-            <tr><td><button style={this.state.tool === "RECTANGLE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickRectangle(e)}>Rectangle</button></td></tr>
-            <tr><td><button style={this.state.tool === "POLYGON" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickPolygon(e)}>Polygon</button></td></tr>
-            <tr><td><button style={this.state.tool === "BEZIER" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickBezier(e)}>Bezier</button></td></tr>
-            <tr><td><button style={this.state.tool === "EDIT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickEdit(e)}>Edit</button></td></tr>
-            <tr><td><button style={this.state.tool === "SELECT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickSelect(e)}>Select</button></td></tr>
-            <tr><td><button style={this.state.tool === "MOVE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickMove(e)}>Move</button></td></tr>
-            <tr><td><button style={this.state.tool === "ROTATE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickRotate(e)}>Rotate</button></td></tr>
-            <tr><td><button style={this.state.tool === "SCALE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickScale(e)}>Scale</button></td></tr>
-            <tr><td><button style={this.state.tool === "ZOOMIN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickZoomIn(e)}>Zoom In</button></td></tr>
-            <tr><td><button style={this.state.tool === "ZOOMOUT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickZoomOut(e)}>Zoom Out</button></td></tr>
-            <tr><td><button style={this.state.tool === "PAN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickPan(e)}>Pan</button></td></tr>
+            <tr><td><button style={this.state.tool === "LINE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("LINE")}>Line</button></td></tr>
+            <tr><td><button style={this.state.tool === "FREEHAND" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("FREEHAND")}>Free Hand</button></td></tr>
+            <tr><td><button style={this.state.tool === "RECTANGLE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("RECTANGLE")}>Rectangle</button></td></tr>
+            <tr><td><button style={this.state.tool === "POLYGON" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("POLYGON")}>Polygon</button></td></tr>
+            <tr><td><button style={this.state.tool === "BEZIER" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("BEZIER")}>Bezier</button></td></tr>
+            <tr><td><button style={this.state.tool === "EDIT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("EDIT")}>Edit</button></td></tr>
+            <tr><td><button style={this.state.tool === "SELECT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SELECT")}>Select</button></td></tr>
+            <tr><td><button style={this.state.tool === "MOVE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("MOVE")}>Move</button></td></tr>
+            <tr><td><button style={this.state.tool === "ROTATE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ROTATE")}>Rotate</button></td></tr>
+            <tr><td><button style={this.state.tool === "SCALE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SCALE")}>Scale</button></td></tr>
+            <tr><td><button style={this.state.tool === "ZOOMIN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMIN")}>Zoom In</button></td></tr>
+            <tr><td><button style={this.state.tool === "ZOOMOUT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMOUT")}>Zoom Out</button></td></tr>
+            <tr><td><button style={this.state.tool === "PAN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("PAN")}>Pan</button></td></tr>
             <tr><td><button style={this.state.tool === undefined ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickNoTool(e)}>No Tool</button></td></tr>
             <tr><td><b>Constraints</b></td></tr>
             <tr>
