@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import {Line, Polygon, Bezier, Rectangle, Freehand, Point} from './Shape.js';
 import {CoincidentConstraint, ParallelLineConstraint, PerpendicularLineConstraint, VerticalLineConstraint, HorizontalLineConstraint, angle} from './GeometricConstraintSolver.js';
+
+var c = require('cassowary');
 //import ReactDOM from 'react-dom';
 // import makerjs from 'makerjs';
 
@@ -172,11 +174,15 @@ class DrawArea extends React.Component {
       selectedLines: [],
       selectedPoints: [],
       originalPoint: undefined,
+
+      solverPoints: [], //holds array of c.Point objects
       //file: undefined,
     };
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleMouseUp = this.handleMouseUp.bind(this);
+
+    this.solver = new c.SimplexSolver();
     //this.handleKeyPress = this.handleKeyPress.bind(this);
   }
 
@@ -222,19 +228,6 @@ class DrawArea extends React.Component {
 
     switch (this.state.tool) {
       case "FREEHAND":
-        // let oldState = this.state.lines;
-        //
-        // console.log("old: ", oldState);
-        // oldState.push([point]);
-        // console.log(oldState);
-        //
-        // let newState = oldState;
-        // console.log("new: ", newState)
-
-        // this.setState({
-        //     lines: newState,
-        //     isDrawing: true,
-        // });
 
         let freehandCurve = new Freehand(point);
         oldShapes.push(freehandCurve);
@@ -246,10 +239,30 @@ class DrawArea extends React.Component {
         break;
       case "LINE": //TODO: Make function like Polygon but using constraints
         if (this.state.isDrawing) {
+          this.solver.endEdit();
           this.setState({
             isDrawing: false
           })
         } else {
+          //SOLVER STUFF
+          //create c.Point(s)
+          let p1 = new c.Point(point.x, point.y);
+          let p2 = new c.Point(point.x, point.y);
+          //add points to solver
+          this.solver
+            .addPointStays([p1, p2])
+            .addEditVar(p2.x)
+            .addEditVar(p2.y)
+            .beginEdit();
+
+          let oldPoints = this.state.solverPoints;
+          oldPoints.push(p1);
+          oldPoints.push(p2);
+          this.setState({
+            solverPoints: oldPoints
+          });
+
+          //OLD STUFF
           let line = new Line(point);
           oldShapes.push(line);
           this.setState({
@@ -758,7 +771,16 @@ class DrawArea extends React.Component {
 
     switch (this.state.tool) {
       case "LINE":
+        //NEW STUFF
+        var lastPoint = this.state.solverPoints[this.state.solverPoints.length-1];
+        this.solver
+          .suggestValue(lastPoint.x, point.x)
+          .suggestValue(lastPoint.y, point.y)
+          .resolve();
+        console.log(lastPoint.x);
 
+
+        //OLD STUFF
         oldShapes[oldShapes.length - 1].p2(point); //update second point of line
         this.setState({  //TODO: FACTOR THIS OUT OF ALL CASES?
           shapes: oldShapes,
