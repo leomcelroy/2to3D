@@ -16,7 +16,7 @@ class Line {
     //this.length_ = Math.sqrt(distanceSquared(this.p1_, this.p2_));
     this.selected = false;
     this.p1_selected = false;
-    this.p2_selected = true;
+    this.p2_selected = false;
     //this.points_ = [];
 
     solver.addPointStays([this.p1_, this.p2_]);
@@ -40,10 +40,41 @@ class Line {
 
   toLines() { return [this.toLine()] };
 
-  selectedObjectAt(point) {
-    if (distanceSquared(point, cPointToPoint(this.p1_)) < this.pointSelectDistance_**2) { return this.p1_; }
-    if (distanceSquared(point, cPointToPoint(this.p2_)) < this.pointSelectDistance_**2) { return this.p2_; }
-    if (onLine(point, cPointToPoint(this.p1_), cPointToPoint(this.p2_), this.pointSelectDistance_)) { return this; }
+  // selectedObjectAt(point) {
+  //   if (distanceSquared(point, cPointToPoint(this.p1_)) < this.pointSelectDistance_**2) { return this.p1_; }
+  //   if (distanceSquared(point, cPointToPoint(this.p2_)) < this.pointSelectDistance_**2) { return this.p2_; }
+  //   if (onLine(point, cPointToPoint(this.p1_), cPointToPoint(this.p2_), this.pointSelectDistance_)) { return this; }
+  // }
+
+  selectObjectAt(point) {
+    if (distanceSquared(point, cPointToPoint(this.p1_)) < this.pointSelectDistance_**2) {
+      this.p1_selected = !this.p1_selected;
+      return true;
+    } else if (distanceSquared(point, cPointToPoint(this.p2_)) < this.pointSelectDistance_**2) {
+      this.p2_selected = !this.p2_selected;
+      return true;
+    } else if (onLine(point, cPointToPoint(this.p1_), cPointToPoint(this.p2_), this.pointSelectDistance_)) {
+      this.selected = !this.selected;
+      this.p1_selected = this.p2_selected = this.selected;
+      return true;
+    }
+    return false;
+  }
+
+  selectedPoints() {
+    if (this.p1_selected && this.p2_selected) {
+      return [this.p1_, this.p2_];
+    } else if (this.p1_selected) {
+      return [this.p1_];
+    } else if  (this.p2_selected) {
+      return [this.p2_];
+    } else {
+      return [];
+    }
+  }
+
+  deselect() {
+    this.selected = this.p1_selected = this.p2_selected = false;
   }
 
   //updateLength() { this.length_ = Math.sqrt(distanceSquared(this.p1_, this.p2_)); }
