@@ -39,9 +39,11 @@ class Line {
 
   toLine() { return [cPointToPoint(this.p1_), cPointToPoint(this.p2_)] };
 
-  pointsToCPoints(points) {
+  pointsToCPoints(points, solver) {
     this.p1_ = new c.Point(points[0].x, points[0].y);
     this.p2_ = new c.Point(points[1].x, points[1].y);
+
+    solver.addPointStays([this.p1_, this.p2_]);
   }
 
   toLines() { return [this.toLine()] };

@@ -433,7 +433,7 @@ class DrawArea extends React.Component {
               break;
             case "line":
               console.log("shape: ", shape.toLine());
-              newShape = new Line({x:0,y:0}, this.solver);
+              newShape = new Line({x:100,y:100}, this.solver);
               break;
           }
           newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
@@ -458,7 +458,7 @@ class DrawArea extends React.Component {
               newShape = new Rectangle;
               break;
             case "line":
-              newShape = new Line({x:0,y:0}, this.solver);
+              newShape = new Line({x:100,y:100}, this.solver);
               break;
           }
 
@@ -675,30 +675,41 @@ class DrawArea extends React.Component {
             let newShapes = [];
 
             this.state.originalShapes.forEach((shape) => {
-              if (this.state.tool === "PAN" || shape.selected) {
-                let newShape = undefined;
-                switch (shape.shape_) {   //different shapes can be added here
-                  case "freehand":
-                  case "polygon":
-                    newShape = new Polygon;
-                    break;
-                  case "rectangle":
-                    newShape = new Rectangle;
-                    break;
-                  case "line":
-                    newShape = new Line({x:0,y:0}, this.solver);
-                    break;
-                }
+              if (shape.selected) {
+                let newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
 
-                newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
                 let newPoints = newShape.toLine().map(shapePoint => {
-                  //console.log(point.x-this.state.pivotPoint.x, point.y-this.state.pivotPoint.y)
-                  return ({x:shapePoint.x+(point.x-this.state.pivotPoint.x), y:shapePoint.y+(point.y-this.state.pivotPoint.y)}) //denomiator sets speed of movement
-                });
-                //console.log(newPoints);
-                newShape.pointsToCPoints(newPoints);
+                    return ({x:shapePoint.x+(point.x-this.state.pivotPoint.x), y:shapePoint.y+(point.y-this.state.pivotPoint.y)}) //denomiator sets speed of movement
+                  });
+                newShape.pointsToCPoints(newPoints, this.solver);
                 newShapes.push(newShape);
+
               }
+            // this.state.originalShapes.forEach((shape) => {
+            //   if (this.state.tool === "PAN" || shape.selected) {
+            //     let newShape = undefined;
+            //     switch (shape.shape_) {   //different shapes can be added here
+            //       case "freehand":
+            //       case "polygon":
+            //         newShape = new Polygon;
+            //         break;
+            //       case "rectangle":
+            //         newShape = new Rectangle;
+            //         break;
+            //       case "line":
+            //         newShape = new Line({x:undefined,y:undefined}, this.solver);
+            //         break;
+            //     }
+            //
+            //     newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
+            //     let newPoints = newShape.toLine().map(shapePoint => {
+            //       //console.log(point.x-this.state.pivotPoint.x, point.y-this.state.pivotPoint.y)
+            //       return ({x:shapePoint.x+(point.x-this.state.pivotPoint.x), y:shapePoint.y+(point.y-this.state.pivotPoint.y)}) //denomiator sets speed of movement
+            //     });
+            //     //console.log(newPoints);
+            //     newShape.pointsToCPoints(newPoints, this.solver);
+            //     newShapes.push(newShape);
+            //   }
             });
 
             if (this.state.tool === "PAN") {
@@ -713,20 +724,7 @@ class DrawArea extends React.Component {
           break;
         case "ROTATE":
           const functionRotate = (angle, pivot, shape) => {
-            let newShape = undefined;
-            switch (shape.shape_) {   //different shapes can be added here
-              case "freehand":
-              case "polygon":
-                newShape = new Polygon;
-                break;
-              case "rectangle":
-                newShape = new Rectangle;
-                break;
-              case "line":
-                newShape = new Line({x:0,y:0}, this.solver);
-                break;
-            }
-            newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
+            let newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
 
             let newPoints = newShape.toLine().map(shapePoint => { //TODO: fix for lines to points()
 
@@ -741,7 +739,7 @@ class DrawArea extends React.Component {
               return newPoint;
             })
 
-              newShape.pointsToCPoints(newPoints);
+              newShape.pointsToCPoints(newPoints, this.solver);
 
               return newShape;
             }
@@ -785,20 +783,7 @@ class DrawArea extends React.Component {
               if (shape.selected) {
 
                 const functionScale = (factor, shape) => {
-                  let newShape = undefined;
-                  switch (shape.shape_) {   //different shapes can be added here
-                    case "freehand":
-                    case "polygon":
-                      newShape = new Polygon;
-                      break;
-                    case "rectangle":
-                      newShape = new Rectangle;
-                      break;
-                    case "line":
-                      newShape = new Line({x:0,y:0}, this.solver);
-                      break;
-                  }
-                  newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
+                  let newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
 
                   let newPoints = newShape.toLine().map(shapePoint => {
                     let angle = this.functionGetAngle(shapePoint, pivot) + Math.PI;
@@ -807,7 +792,7 @@ class DrawArea extends React.Component {
                     return newPoint;
                   })
 
-                    newShape.pointsToCPoints(newPoints);
+                    newShape.pointsToCPoints(newPoints, this.solver);
 
                     return newShape;
                   }
