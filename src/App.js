@@ -51,6 +51,7 @@ class Drawing extends React.Component {
     let newShapeArray = this.props.newShapes;
     let lineArray = [];
     let lineArrayAndColor = [];
+    let lineArrayAndEndpointColor = [];
     let lineArrayAndType = [];
     let color = "black";
     shapeArray.forEach((shape) => {
@@ -61,9 +62,17 @@ class Drawing extends React.Component {
           color = "black";
         }
         let type = shape.shape_;
+        let endpointColor = ["black", "black"]
+        if (shape.p1_selected === true) {
+          endpointColor[0] = "blue";
+        }
+        if (shape.p2_selected === true) {
+          endpointColor[1] = "blue";
+        }
 
         lineArray = lineArray.concat(shape.toLines());
         lineArrayAndColor = lineArrayAndColor.concat(shape.toLines().map(entry => color));
+        lineArrayAndEndpointColor = lineArrayAndEndpointColor.concat(shape.toLines().map(entry => endpointColor));
         lineArrayAndType = lineArrayAndType.concat(shape.toLines().map(entry => type));
       }
     });
@@ -76,9 +85,17 @@ class Drawing extends React.Component {
           color = "black";
         }
         let type = shape.shape_;
+        let endpointColor = ["black", "black"]
+        if (shape.p1_selected === true) {
+          endpointColor[0] = "blue";
+        }
+        if (shape.p2_selected === true) {
+          endpointColor[1] = "blue";
+        }
 
         lineArray = lineArray.concat(shape.toLines());
         lineArrayAndColor = lineArrayAndColor.concat(shape.toLines().map(entry => color));
+        lineArrayAndEndpointColor = lineArrayAndEndpointColor.concat(shape.toLines().map(entry => endpointColor));
         lineArrayAndType = lineArrayAndType.concat(shape.toLines().map(entry => type));
       }
     });
@@ -115,14 +132,14 @@ class Drawing extends React.Component {
         ))}
         {lineArray.map((line, index) => {
           if (lineArrayAndType[index] !== "freehand" || lineArrayAndColor[index] === "blue") { //change to freehand to remove points from freehand lines
-            return <circle key={index} cx={`${line[0].x}`} cy={`${line[0].y}`} r="2" fill={lineArrayAndColor[index]}/>
+            return <circle key={index} cx={`${line[0].x}`} cy={`${line[0].y}`} r="2" fill={lineArrayAndEndpointColor[index][0]}/>
           } else {
             return
           }
         })}
         {lineArray.map((line, index) => {
           if (lineArrayAndType[index] !== "freehand" || lineArrayAndColor[index] === "blue") { //change to freehand to remove points from freehand lines
-            return <circle key={index} cx={`${line[1].x}`} cy={`${line[1].y}`} r="2" fill={lineArrayAndColor[index]}/>
+            return <circle key={index} cx={`${line[1].x}`} cy={`${line[1].y}`} r="2" fill={lineArrayAndEndpointColor[index][1]}/>
           } else {
             return
           }
@@ -165,6 +182,7 @@ class DrawArea extends React.Component {
       selectedLines: [],
       selectedPoints: [],
       originalPoint: undefined,
+      dragStart: undefined,
 
       solverPoints: [], //holds array of c.Point objects
       //file: undefined,
@@ -359,19 +377,42 @@ class DrawArea extends React.Component {
         // //console.log('selectedLines', this.state.selectedLines);
         // break;
       case "SELECT":
-        let selected;
+        //click and drag
+        let anySelected = false;
         this.state.shapes.forEach((shape) => {
-          if (shape.shapeContains(point)) {
-            shape.select();
-            //console.log(shape);
-          }
+          anySelected = anySelected || shape.selectObjectAt(point);
         })
-        //console.log(this.state.shapes.every(shape => shape.shapeContains(point)===false));
-        if (this.state.shapes.every(shape => shape.shapeContains(point)===false)) { //if nothing selected then deselect all shapes
-          this.state.shapes.forEach((shape) => {
-              shape.selected = false;
+        console.log(anySelected);
+        let selectedPoints = [];
+        if (anySelected) {
+          this.state.shapes.forEach(line => {
+            if (line.shape_ === 'line') {
+              selectedPoints = selectedPoints.concat(line.selectedPoints());
+            }
+          });
+        } else {
+          this.state.shapes.forEach(line => {
+            if (line.shape_ === 'line') {
+              line.deselect();
+            }
           })
         }
+        console.log(selectedPoints);
+        if (selectedPoints.length > 0) {
+          selectedPoints.forEach(point => {
+            this.solver.addEditVar(point.x)
+                       .addEditVar(point.y);
+          });
+          this.solver.beginEdit();
+        } else {
+          this.solver.endEdit();
+        }
+        this.setState({
+          selectedPoints,
+          dragStart: point,
+        });
+
+        // let selectedPoints = this.state.
         break;
       case "PAN":
       case "MOVE":
@@ -566,25 +607,43 @@ class DrawArea extends React.Component {
     var point = this.relativeCoordinatesForEvent(mouseEvent);
     if (!this.state.isDrawing) {
       switch (this.state.tool) {
+        case "SELECT":
+        if (this.state.mousedown === true) {
+          var point = this.relativeCoordinatesForEvent(mouseEvent);
+          let dx = point.x - this.state.dragStart.x;
+          let dy = point.y - this.state.dragStart.y;
+          this.state.selectedPoints.forEach(sPoint => {
+            console.log(sPoint);
+            console.log(this.solver._editVarList);
+            this.solver.suggestValue(sPoint.x, sPoint.x.value + dx)
+                       .suggestValue(sPoint.y, sPoint.y.value + dy)
+            this.solver.resolve();
+          });
+
+        }
+        this.setState({
+          dragStart: point
+        });
+        break;
         case "EDIT": //TODO: change this to use coincident constraint with pointer
-          if (this.state.mousedown && this.state.selected) {
-            // console.log("input", point)
-            for (var i=0; i < this.state.selected.length; i++) {
-              if (this.isPointOrArrayOfPoints(this.state.selected[i])) {
-                if (Array.isArray(this.state.selected[i]) === false) {
-                  this.state.selected[i].x = point.x;
-                  this.state.selected[i].y = point.y;
-                  this.setState({});
-                } else {
-                  for (var j=0; j < this.state.selected[i].length; j++) {
-                    this.state.selected[i][j].x = point.x;
-                    this.state.selected[i][j].y = point.y;
-                    this.setState({});
-                  }
-                }
-              }
-            }
-          }
+          // if (this.state.mousedown && this.state.selected) {
+          //   // console.log("input", point)
+          //   for (var i=0; i < this.state.selected.length; i++) {
+          //     if (this.isPointOrArrayOfPoints(this.state.selected[i])) {
+          //       if (Array.isArray(this.state.selected[i]) === false) {
+          //         this.state.selected[i].x = point.x;
+          //         this.state.selected[i].y = point.y;
+          //         this.setState({});
+          //       } else {
+          //         for (var j=0; j < this.state.selected[i].length; j++) {
+          //           this.state.selected[i][j].x = point.x;
+          //           this.state.selected[i][j].y = point.y;
+          //           this.setState({});
+          //         }
+          //       }
+          //     }
+          //   }
+          // }
 
 
           // this.state.lines.map((line, index) => {
