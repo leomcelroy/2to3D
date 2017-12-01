@@ -291,26 +291,69 @@ class DrawArea extends React.Component {
         if (this.state.isDrawing) {
           if (oldShapes[oldShapes.length -1].closed()) {
             // console.log('closed');
+            this.solver.endEdit();
             this.setState({
               isDrawing: false,
             });
           } else {
-            // console.log('not closed');
-            oldShapes[oldShapes.length-1].addPoint(point);
+            let line = new Line(point, this.solver);
+            let oldLine = oldShapes[oldShapes.length -1];
+            this.solver
+              .addEditVar(line.p2_.x)
+              .addEditVar(line.p2_.y)
+              .beginEdit();
+
+
+            //add coincident constraint
+            console.log("old x:", oldLine.p2_.x.value , "new x:",line.p1_.x.value);
+            console.log("old y:", oldLine.p2_.y.value , "new y:",line.p1_.y.value);
+
+            let eq = new c.Equation(oldLine.p2_.x, new c.Expression(line.p1_.x));
+            let eq2 = new c.Equation(oldLine.p2_.y, new c.Expression(line.p1_.y));
+
+            this.solver.addConstraint(eq)
+                       .addConstraint(eq2)
+
+            oldShapes.push(line);
+
+
+
+
+            //this.solver.solve();
+
             this.setState({
               shapes: oldShapes,
-              //isDrawing: true, //this is redundant, but i may refactor later
-            })
+            });
           }
         } else {
-          let polygon = new Polygon(point);
-
-          oldShapes.push(polygon);
-          this.setState({
-            shapes: oldShapes,
-            isDrawing: true,
-          });
+          let line = new Line(point, this.solver);
+            this.solver
+              .addEditVar(line.p2_.x)
+              .addEditVar(line.p2_.y)
+              .beginEdit();
+            oldShapes.push(line);
+            this.setState({
+              shapes: oldShapes,
+              isDrawing: true,
+            });
         }
+        // if (this.state.isDrawing) {
+        //   this.solver.endEdit();
+        //   this.setState({
+        //     isDrawing: false
+        //   })
+        // } else {
+        //   //NEW STUFF
+        //   let line = new Line(point, this.solver);
+        //   this.solver
+        //     .addEditVar(line.p2_.x)
+        //     .addEditVar(line.p2_.y)
+        //     .beginEdit();
+        //   oldShapes.push(line);
+        //   this.setState({
+        //     shapes: oldShapes,
+        //     isDrawing: true,
+        //   });
         break;
       case "RECTANGLE":
         let rectangle = new Rectangle(point);
@@ -340,43 +383,7 @@ class DrawArea extends React.Component {
         }
         break;
       case "EDIT": //need to be able to select points and lines
-        // let selected = [];
-        // let lines = this.state.selectedLines;
-        // let sPoints = this.state.selectedPoints;
-        // this.state.shapes.forEach((shape) => {  //todo: refactor forEach to some?
-        //   let obj = shape.selectedObjectAt(point);
-        //
-        //   if (obj) {
-        //     if (Array.isArray(obj)) {
-        //       selected.push(obj[0]);
-        //       selected.push(obj[1]);
-        //
-        //       if (selected[selected.length-1].shape_ === "line") {
-        //         lines.push(obj[0]);
-        //       } else {
-        //         sPoints.push(obj[0]);
-        //       }
-        //     } else {
-        //       selected.push(obj);
-        //
-        //       if (selected[selected.length-1].shape_ === "line") {
-        //         lines.push(obj);
-        //       } else {
-        //         sPoints.push(obj);
-        //       }
-        //     }
-        //     console.log(obj);
-        //     //break
-        //   }
-        // });
-        //
-        // this.setState({
-        //   selected: selected,
-        //   selectedLines: lines,
-        //   selectedPoints: sPoints,
-        // });
-        // //console.log('selectedLines', this.state.selectedLines);
-        // break;
+        break;
       case "SELECT":
         //click and drag
         let anySelected = false;
@@ -422,22 +429,23 @@ class DrawArea extends React.Component {
         var point = this.relativeCoordinatesForEvent(mouseEvent);
         let originalShapes = [];
         this.state.shapes.forEach(shape => {
-          let newShape = undefined;
-          switch (shape.shape_) {   //different shapes can be added here
-            case "freehand":
-            case "polygon":
-              newShape = new Polygon;
-              break;
-            case "rectangle":
-              newShape = new Rectangle;
-              break;
-            case "line":
-              console.log("shape: ", shape.toLine());
-              newShape = new Line({x:100,y:100}, this.solver);
-              break;
-          }
-          newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
+          let newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
           originalShapes.push(newShape);
+          // switch (shape.shape_) {   //different shapes can be added here
+          //   case "freehand":
+          //   case "polygon":
+          //     newShape = new Polygon;
+          //     break;
+          //   case "rectangle":
+          //     newShape = new Rectangle;
+          //     break;
+          //   case "line":
+          //     console.log("shape: ", shape.toLine());
+          //     newShape = new Line({x:100,y:100}, this.solver);
+          //     break;
+          // }
+          // newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
+          // originalShapes.push(newShape);
         })
         this.setState({pivotPoint:point, originalShapes:originalShapes});
         break;
@@ -448,27 +456,14 @@ class DrawArea extends React.Component {
         let points = [];
 
         this.state.shapes.forEach(shape => {
-          let newShape = undefined;
-          switch (shape.shape_) {   //different shapes can be added here
-            case "freehand":
-            case "polygon":
-              newShape = new Polygon;
-              break;
-            case "rectangle":
-              newShape = new Rectangle;
-              break;
-            case "line":
-              newShape = new Line({x:100,y:100}, this.solver);
-              break;
-          }
+          let newShape = newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
+
+          originalShapes.push(newShape);
 
           if (shape.selected) {
             //points = (shape.shape_ === "line") ? points.concat(shape.points()) : points.concat(shape.points());
             points = points.concat(shape.toLine());
           }
-
-          newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
-          originalShapes.push(newShape);
         })
 
         let averageX = points.length > 1 ? points.reduce(functionAverageX) : undefined;
@@ -633,40 +628,6 @@ class DrawArea extends React.Component {
           });
         break;
         case "EDIT": //TODO: change this to use coincident constraint with pointer
-          // if (this.state.mousedown && this.state.selected) {
-          //   // console.log("input", point)
-          //   for (var i=0; i < this.state.selected.length; i++) {
-          //     if (this.isPointOrArrayOfPoints(this.state.selected[i])) {
-          //       if (Array.isArray(this.state.selected[i]) === false) {
-          //         this.state.selected[i].x = point.x;
-          //         this.state.selected[i].y = point.y;
-          //         this.setState({});
-          //       } else {
-          //         for (var j=0; j < this.state.selected[i].length; j++) {
-          //           this.state.selected[i][j].x = point.x;
-          //           this.state.selected[i][j].y = point.y;
-          //           this.setState({});
-          //         }
-          //       }
-          //     }
-          //   }
-          // }
-
-
-          // this.state.lines.map((line, index) => {
-          //   var point = this.relativeCoordinatesForEvent(mouseEvent);
-          //   let d1 = this.distanceSquared(line[0], point)**(1/2);
-          //   let d2 = this.distanceSquared(line[1], point)**(1/2);
-          //   let total = this.distanceSquared(line[0], line[1])**(1/2);
-          //   // console.log(d1+d2);
-          //   // console.log("total", total)
-          //
-          //   //doesnt work for freehand lines
-          //   if ((d1 + d2) < (total+1) || (d1 + d2) < (total-1)) {
-          //     // console.log(index);
-          //   }
-          //
-          // })
           break;
         case "PAN":
         case "MOVE":
@@ -846,10 +807,13 @@ class DrawArea extends React.Component {
         //console.log(this.state.isDrawing);
         if (!this.state.isDrawing) {break;};
       case "POLYGON":
-        oldShapes[oldShapes.length -1].lastPoint(point); //update the last point of the polygon
-        this.setState({
-          shapes: oldShapes,
-        });
+        // oldShapes[oldShapes.length -1].lastPoint(point); //update the last point of the polygon
+        var lastLine = oldShapes[oldShapes.length - 1];
+        this.solver
+          .suggestValue(lastLine.p2_.x, point.x)
+          .suggestValue(lastLine.p2_.y, point.y)
+          .resolve();
+        this.setState({});
         break;
       case "FREEHAND":
         // console.log("old: ", oldState);
@@ -903,20 +867,6 @@ class DrawArea extends React.Component {
           //console.log(this.state.selected);
           break;
         case "POLYGON": //close polygon using constraints
-          let lastShape = oldShapes[oldShapes.length -1];
-          let b = oldShapes.length > 0 ? lastShape.closed() : false;
-
-          if (b) {
-            let points = lastShape.points();
-            let lp = points.length;
-            let oldConstraints = this.state.constraints;
-            let c = CoincidentConstraint(points[0], points[lp-1]);
-            oldConstraints.push(c);
-            this.setState({
-              constraints: oldConstraints,
-            });
-            this.constraintUpdate();
-          }
           break;
         case "LINE":
           //do nothing
@@ -1006,20 +956,7 @@ class DrawArea extends React.Component {
       this.solver.addConstraint(eq)
                  .addConstraint(eq2)
     }
-    //cle = c.Expression.fromConstant(db[0].y).plus(db[1].y).divide(2);
-    //cleq = new c.Equation(mp[0].y, cle);
 
-    //solver.addConstraint(cleq);
-    // let sPoints = this.state.selectedPoints;
-    // let p = sPoints.length;
-    //
-    // let oldConstraints = this.state.constraints;
-    // let c = CoincidentConstraint(sPoints[p-1], sPoints[p-2]);
-    // oldConstraints.push(c);
-    // this.setState({
-    //   constraints: oldConstraints,
-    // });
-    // this.constraintUpdate();
   }
 
   horizontal() { //assumes selected is a line
@@ -1227,7 +1164,10 @@ class DrawArea extends React.Component {
       case 13: //enter
         switch (this.state.tool) {
           case "POLYGON":
+              //TODO: remove last constraint, fix bug with second to last point being immobile
               this.setState({isDrawing:false})
+              this.solver.endEdit();
+              this.solver.resolve();
             break;
           default:
             return;
@@ -1237,18 +1177,17 @@ class DrawArea extends React.Component {
         switch (this.state.tool) {
           case "POLYGON":
               let oldShapes = this.state.shapes;
-              let lastShape = oldShapes[oldShapes.length -1];
-              //console.log("lastShape", lastShape);
 
-              let points = lastShape.points().slice(0, lastShape.points().length - 1);
-              //console.log("lastShape Points", points);
+              //TODO: remove last constraint, fix bug with last point being immobile
 
-              lastShape.points(points);
-              //console.log("oldShapes", oldShapes);
+              //this.solver.removeConstraint();
 
               this.setState({
+                shapes: oldShapes.slice(0, oldShapes.length - 1),
                 isDrawing:false,
               })
+              this.solver.endEdit();
+              this.solver.resolve();
             break;
           default:
             return;
@@ -1444,12 +1383,15 @@ class DrawArea extends React.Component {
             <tr><td><button style={this.state.tool === "BEZIER" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("BEZIER")}>Bezier</button></td></tr>
             <tr><td><button style={this.state.tool === "EDIT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("EDIT")}>Edit</button></td></tr>
             <tr><td><button style={this.state.tool === "SELECT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SELECT")}>Select</button></td></tr>
+            <tr><td>Direct Transform</td></tr>
             <tr><td><button style={this.state.tool === "MOVE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("MOVE")}>Move</button></td></tr>
             <tr><td><button style={this.state.tool === "ROTATE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ROTATE")}>Rotate</button></td></tr>
             <tr><td><button style={this.state.tool === "SCALE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SCALE")}>Scale</button></td></tr>
+            <tr><td>View Tools</td></tr>
             <tr><td><button style={this.state.tool === "ZOOMIN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMIN")}>Zoom In</button></td></tr>
             <tr><td><button style={this.state.tool === "ZOOMOUT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMOUT")}>Zoom Out</button></td></tr>
             <tr><td><button style={this.state.tool === "PAN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("PAN")}>Pan</button></td></tr>
+            <tr><td>Other</td></tr>
             <tr><td><button style={this.state.tool === undefined ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickNoTool(e)}>No Tool</button></td></tr>
             <tr><td><b>Constraints</b></td></tr>
             <tr>

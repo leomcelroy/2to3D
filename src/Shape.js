@@ -48,6 +48,8 @@ class Line {
 
   toLines() { return [this.toLine()] };
 
+  closed() {return false};
+
   // selectedObjectAt(point) {
   //   if (distanceSquared(point, cPointToPoint(this.p1_)) < this.pointSelectDistance_**2) { return this.p1_; }
   //   if (distanceSquared(point, cPointToPoint(this.p2_)) < this.pointSelectDistance_**2) { return this.p2_; }
