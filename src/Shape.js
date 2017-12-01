@@ -1,70 +1,74 @@
 import {CoincidentConstraint, ParallelLineConstraint, PerpendicularLineConstraint, VerticalLineConstraint, HorizontalLineConstraint, angle} from './GeometricConstraintSolver.js';
-
+var c = require('cassowary');
 //look at maker.js?
 
+
+
 class Line {
-  constructor(p1, p2) {
-    if (!p2) {
-      p2 = p1;
-    }
+  constructor(startingPoint, solver) {
 
     this.shape_ = 'line';
-    this.p1_ = p1; //lets make this into list of points to have same form as polygon
-    this.p2_ = p2;
+    this.p1_ = new c.Point(startingPoint.x, startingPoint.y);
+    this.p2_ = new c.Point(startingPoint.x, startingPoint.y);
     this.pointSelectDistance_ = 15; //todo: setter / getter
     this.lineSelectDistance_ = 14;
     this.objectSelectDistance_ = 5;
     //this.length_ = Math.sqrt(distanceSquared(this.p1_, this.p2_));
     this.selected = false;
+    this.p1_selected = false;
+    this.p2_selected = true;
     //this.points_ = [];
+
+    solver.addPointStays([this.p1_, this.p2_]);
   }
 
-  points(points) {
-    if (points === undefined) {
-      return [this.p1_, this.p2_];
-    }
-    this.p1_ = points[0];
-    this.p2_ = points[1];
+  // points(points) {
+  //   if (points === undefined) {
+  //     return [this.p1_, this.p2_];
+  //   }
+  //   this.p1_ = points[0];
+  //   this.p2_ = points[1];
+  //
+  //   //this.points_ = points;
+  // }
 
-    //this.points_ = points;
-  }
+  p1(p) { if (p){ this.p1_ = p; return this;} return this.p1_};
 
-  p1(p) { if (p){ this.p1_ = p; this.updateLength(); return this;} return this.p1_};
+  p2(p) { if (p){ this.p2_ = p; return this;} return this.p2_};
 
-  p2(p) { if (p){ this.p2_ = p; this.updateLength(); return this;} return this.p2_};
+  toLine() { return [cPointToPoint(this.p1_), cPointToPoint(this.p2_)] };
 
-  toLine() { return [this.p1_, this.p2_] };
-
-  toLines() { return [[this.p1_, this.p2_]] };
+  toLines() { return [this.toLine()] };
 
   selectedObjectAt(point) {
-    if (distanceSquared(point, this.p1_) < this.pointSelectDistance_**2) { return this.p1_; }
-    if (distanceSquared(point, this.p2_) < this.pointSelectDistance_**2) { return this.p2_; }
-    if (onLine(point, this.p1_, this.p2_, this.pointSelectDistance_)) { return this; }
+    if (distanceSquared(point, cPointToPoint(this.p1_)) < this.pointSelectDistance_**2) { return this.p1_; }
+    if (distanceSquared(point, cPointToPoint(this.p2_)) < this.pointSelectDistance_**2) { return this.p2_; }
+    if (onLine(point, cPointToPoint(this.p1_), cPointToPoint(this.p2_), this.pointSelectDistance_)) { return this; }
   }
 
-  updateLength() { this.length_ = Math.sqrt(distanceSquared(this.p1_, this.p2_)); }
+  //updateLength() { this.length_ = Math.sqrt(distanceSquared(this.p1_, this.p2_)); }
 
-  length(len) {
-    //TODO: update length when given
-    return this.length_;
-  }
+  // length(len) {
+  //   //TODO: update length when given
+  //   return this.length_;
+  // }
 
   select(booleanValue) {
     return this.selected = (!booleanValue) ? !this.selected : booleanValue;
   }
 
   angle(a) {
+    console.log("TODO: REMOVE");
     //console.log(this.length);
     if (a === undefined) {
       return Math.atan2(this.p2_.y - this.p1_.y, this.p2_.x - this.p1_.x);
     }
-    this.p2_.y = this.p1_.y + Math.sin(a) * this.length();
-    this.p2_.x = this.p1_.x + Math.cos(a) * this.length();
+    // this.p2_.y = this.p1_.y + Math.sin(a) * this.length();
+    // this.p2_.x = this.p1_.x + Math.cos(a) * this.length();
   }
 
   shapeContains(point) {
-    return onLine(point, this.p1_, this.p2_, this.objectSelectDistance_);
+    return onLine(point, cPointToPoint(this.p1_), cPointToPoint(this.p2_), this.objectSelectDistance_);
   }
 
   rendersPath() {
@@ -356,32 +360,6 @@ class Freehand {
   }
 } //end Freehand()
 
- class Point {
-//   constructor(point) {
-//     this.shape_ = 'point';
-//     this.points_ = [];
-//     this.x = point ? point.x : undefined;
-//     this.y = point ? point.y : undefined;
-//     this.pointSelectDistance_ = 5; //todo: setter / getter
-//     this.selected = false;
-//
-//     if (point) {
-//       this.points_.push(point);
-//     }
-//
-//   }
-//
-//   closed() {return true};
-//
-//   select() {
-//     return this.selected = !this.selected;
-//   }
-//
-//   rendersPath() {
-//     return false;
-//   }
- }
-
 class Bezier {
   constructor(start, c1, c2, end) {
     this.start_ = start;
@@ -449,42 +427,6 @@ function onLine(point, p1, p2, buffer) {
   return Math.sqrt(d1) + Math.sqrt(d2) < Math.sqrt(distanceSquared(p1, p2)) + buffer
 }
 
-//-------------------------------constraints-------------------------------
-
-// function ParallelLineConstraint(line1, line2) {
-//   let constraint = {
-//     line1,
-//     line2,
-//   }
-//   constraint.satisfy = function() {
-//     if (this.line1.angle() === this.line2.angle()) {
-//       return false;
-//     }
-//     this.line2.angle(this.line1.angle());
-//     return true;
-//   }
-//
-//   return constraint
-// }
-//
-// function HorizontalLineConstraint(line1) {
-//   let constraint = {
-//     line1,
-//   }
-//   constraint.satisfy = function() {
-//     if (this.line1.angle() === 0) {
-//       return false;
-//     }
-//     this.line1.angle(0);
-//     return true;
-//   }
-//
-//   return constraint
-// }
-//
-// function LineAngleConstraint(line, angle) { //a quick example?
-//
-// }
 
 //-------------------------------helper functions-------------------------------
 
@@ -497,6 +439,10 @@ function pointEqual(p1, p2) {
   return foo;
 }
 
+function cPointToPoint(cpoint) {
+  return {'x': cpoint.x.value, 'y': cpoint.y.value};
+}
 
 
-export {Line, Polygon, Bezier, Rectangle, Freehand, Point};
+
+export {Line, Polygon, Bezier, Rectangle, Freehand};

@@ -1,22 +1,9 @@
 import React, { Component } from 'react';
-import {Line, Polygon, Bezier, Rectangle, Freehand, Point} from './Shape.js';
+import {Line, Polygon, Bezier, Rectangle, Freehand} from './Shape.js';
 import {CoincidentConstraint, ParallelLineConstraint, PerpendicularLineConstraint, VerticalLineConstraint, HorizontalLineConstraint, angle} from './GeometricConstraintSolver.js';
 
 var c = require('cassowary');
-//import ReactDOM from 'react-dom';
-// import makerjs from 'makerjs';
 
-// let line = {
-//   type: 'line',
-//   origin: [10, 10],
-//   end: [50, 50]
-// };
-//
-// let svg = makerjs.exporter.toSVG(line);
-
-// let canvasStyle = {
-//   border: "1px solid red"
-// }
 
 const SELECT_DISTANCE = 7;
 
@@ -244,32 +231,37 @@ class DrawArea extends React.Component {
             isDrawing: false
           })
         } else {
-          //SOLVER STUFF
-          //create c.Point(s)
-          let p1 = new c.Point(point.x, point.y);
-          let p2 = new c.Point(point.x, point.y);
-          //add points to solver
+          //NEW STUFF
+          let line = new Line(point, this.solver);
           this.solver
-            .addPointStays([p1, p2])
-            .addEditVar(p2.x)
-            .addEditVar(p2.y)
+            .addEditVar(line.p2_.x)
+            .addEditVar(line.p2_.y)
             .beginEdit();
-
-          let oldPoints = this.state.solverPoints;
-          oldPoints.push(p1);
-          oldPoints.push(p2);
-          this.setState({
-            solverPoints: oldPoints
-          });
-
-          //OLD STUFF
-          let line = new Line(point);
           oldShapes.push(line);
           this.setState({
             shapes: oldShapes,
             isDrawing: true,
           });
-          // console.log("shapes", this.state.shapes);
+            // console.log("shapes", this.state.shapes);
+
+
+          //SOLVER STUFF
+          //create c.Point(s)
+          // let p1 = new c.Point(point.x, point.y);
+          // let p2 = new c.Point(point.x, point.y);
+          // //add points to solver
+          // this.solver
+          //   .addPointStays([p1, p2])
+          //   .addEditVar(p2.x)
+          //   .addEditVar(p2.y)
+          //   .beginEdit();
+          //
+          // let oldPoints = this.state.solverPoints;
+          // oldPoints.push(p1);
+          // oldPoints.push(p2);
+          // this.setState({
+          //   solverPoints: oldPoints
+          // });
         }
         break;
       case "POLYGON":
@@ -325,45 +317,45 @@ class DrawArea extends React.Component {
         }
         break;
       case "EDIT": //need to be able to select points and lines
-        let selected = [];
-        let lines = this.state.selectedLines;
-        let sPoints = this.state.selectedPoints;
-        this.state.shapes.forEach((shape) => {  //todo: refactor forEach to some?
-          let obj = shape.selectedObjectAt(point);
-
-          if (obj) {
-            if (Array.isArray(obj)) {
-              selected.push(obj[0]);
-              selected.push(obj[1]);
-
-              if (selected[selected.length-1].shape_ === "line") {
-                lines.push(obj[0]);
-              } else {
-                sPoints.push(obj[0]);
-              }
-            } else {
-              selected.push(obj);
-
-              if (selected[selected.length-1].shape_ === "line") {
-                lines.push(obj);
-              } else {
-                sPoints.push(obj);
-              }
-            }
-            console.log(obj);
-            //break
-          }
-        });
-
-        this.setState({
-          selected: selected,
-          selectedLines: lines,
-          selectedPoints: sPoints,
-        });
-        //console.log('selectedLines', this.state.selectedLines);
-        break;
+        // let selected = [];
+        // let lines = this.state.selectedLines;
+        // let sPoints = this.state.selectedPoints;
+        // this.state.shapes.forEach((shape) => {  //todo: refactor forEach to some?
+        //   let obj = shape.selectedObjectAt(point);
+        //
+        //   if (obj) {
+        //     if (Array.isArray(obj)) {
+        //       selected.push(obj[0]);
+        //       selected.push(obj[1]);
+        //
+        //       if (selected[selected.length-1].shape_ === "line") {
+        //         lines.push(obj[0]);
+        //       } else {
+        //         sPoints.push(obj[0]);
+        //       }
+        //     } else {
+        //       selected.push(obj);
+        //
+        //       if (selected[selected.length-1].shape_ === "line") {
+        //         lines.push(obj);
+        //       } else {
+        //         sPoints.push(obj);
+        //       }
+        //     }
+        //     console.log(obj);
+        //     //break
+        //   }
+        // });
+        //
+        // this.setState({
+        //   selected: selected,
+        //   selectedLines: lines,
+        //   selectedPoints: sPoints,
+        // });
+        // //console.log('selectedLines', this.state.selectedLines);
+        // break;
       case "SELECT":
-        selected = undefined;
+        let selected;
         this.state.shapes.forEach((shape) => {
           if (shape.shapeContains(point)) {
             shape.select();
@@ -771,20 +763,27 @@ class DrawArea extends React.Component {
 
     switch (this.state.tool) {
       case "LINE":
-        //NEW STUFF
-        var lastPoint = this.state.solverPoints[this.state.solverPoints.length-1];
+        var lastLine = oldShapes[oldShapes.length - 1];
         this.solver
-          .suggestValue(lastPoint.x, point.x)
-          .suggestValue(lastPoint.y, point.y)
+          .suggestValue(lastLine.p2_.x, point.x)
+          .suggestValue(lastLine.p2_.y, point.y)
           .resolve();
-        console.log(lastPoint.x);
+        this.setState({});
+
+        //NEW STUFF
+        // var lastPoint = this.state.solverPoints[this.state.solverPoints.length-1];
+        // this.solver
+        //   .suggestValue(lastPoint.x, point.x)
+        //   .suggestValue(lastPoint.y, point.y)
+        //   .resolve();
+        // console.log(lastPoint.x);
 
 
         //OLD STUFF
-        oldShapes[oldShapes.length - 1].p2(point); //update second point of line
-        this.setState({  //TODO: FACTOR THIS OUT OF ALL CASES?
-          shapes: oldShapes,
-        });
+        // oldShapes[oldShapes.length - 1].p2(point); //update second point of line
+        // this.setState({  //TODO: FACTOR THIS OUT OF ALL CASES?
+        //   shapes: oldShapes,
+        // });
       break;
 
       case "BEZIER":
