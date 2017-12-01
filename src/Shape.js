@@ -131,8 +131,8 @@ class Line {
 
       return (
         <svg>
-          <circle cx={`${this.p1_.x.value}`} cy={`${this.p1_.y.value}`} r="5" fill={circle1Color}/>
           <path d={pathData} style={style}/>
+          <circle cx={`${this.p1_.x.value}`} cy={`${this.p1_.y.value}`} r="5" fill={circle1Color}/>
           <circle cx={`${this.p2_.x.value}`} cy={`${this.p2_.y.value}`} r="5" fill={circle2Color}/>
         </svg>
       )
@@ -356,9 +356,6 @@ class Freehand {
 
     if (point) {
       this.points_.push(point);
-      this.points_.push(point);
-      this.points_.push(point);
-      this.points_.push(point);
     }
   }
 
@@ -421,6 +418,26 @@ class Freehand {
   rendersPath() {
     return false;
   }
+
+  svgRender() {
+    let lineColor = this.selected ? "blue" : "black";
+
+
+    let style = {
+      fill: "none",
+      strokeWidth: "2px",
+      stroke: lineColor,
+      strokeLinejoin: "round",
+      strokeLinecap: "round",
+    }
+
+    const pathData = "M " + this.points().map(p => `${p['x']} ${p['y']}`);
+
+    return <svg>
+      <path d={pathData} style={style}/>
+      {/*this.points().map(p => <circle cx={`${p['x']}`} cy={`${p['y']}`} r="5" fill={'black'}/>)*/}
+    </svg>
+  }
 } //end Freehand()
 
 class Bezier {
@@ -479,6 +496,27 @@ class Bezier {
 
   rendersPath() {
     return true;
+    }
+
+  svgRender() {
+    let lineColor = this.selected ? "blue" : "black";
+
+
+    let style = {
+      fill: "none",
+      strokeWidth: "2px",
+      stroke: lineColor,
+      strokeLinejoin: "round",
+      strokeLinecap: "round",
+    }
+
+    const pathData = "M " + this.points()[0]['x'] + " " + this.points()[0]['y'] +
+                     " C " + this.points().slice(1).map(p => `${p['x']} ${p['y']}`);
+
+    return <svg>
+      <path d={pathData} style={style}/>
+      {this.points().map(p => <circle cx={`${p['x']}`} cy={`${p['y']}`} r="5" fill={'black'}/>)}
+    </svg>
   }
 }
 
