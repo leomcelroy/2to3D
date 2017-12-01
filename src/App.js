@@ -291,20 +291,15 @@ class DrawArea extends React.Component {
         break;
       case "POLYGON":
         if (this.state.isDrawing) {
-          if (oldShapes[oldShapes.length -1].closed()) {
-            // console.log('closed');
+          if (oldShapes[oldShapes.length - 1].closed()) {
+            console.log('closed');
             this.solver.endEdit();
             this.setState({
               isDrawing: false,
             });
           } else {
             let line = new Line(point, this.solver);
-            let oldLine = oldShapes[oldShapes.length -1];
-            this.solver
-              .addEditVar(line.p2_.x)
-              .addEditVar(line.p2_.y)
-              .beginEdit();
-
+            let oldLine = oldShapes[oldShapes.length - 1];
 
             //add coincident constraint
             console.log("old x:", oldLine.p2_.x.value , "new x:",line.p1_.x.value);
@@ -315,11 +310,14 @@ class DrawArea extends React.Component {
 
             this.solver.addConstraint(eq)
                        .addConstraint(eq2)
+                       .solve();
+
+            this.solver
+              .addEditVar(line.p2_.x)
+              .addEditVar(line.p2_.y)
+              .beginEdit();
 
             oldShapes.push(line);
-
-
-
 
             //this.solver.solve();
 
@@ -1184,8 +1182,7 @@ class DrawArea extends React.Component {
           case "POLYGON":
               //TODO: remove last constraint, fix bug with second to last point being immobile
               this.setState({isDrawing:false})
-              this.solver.endEdit();
-              this.solver.resolve();
+              this.solver.endEdit().resolve();
             break;
           default:
             return;
@@ -1204,8 +1201,7 @@ class DrawArea extends React.Component {
                 shapes: oldShapes.slice(0, oldShapes.length - 1),
                 isDrawing:false,
               })
-              this.solver.endEdit();
-              this.solver.resolve();
+              this.solver.endEdit().resolve();
             break;
           default:
             return;
