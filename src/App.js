@@ -156,6 +156,7 @@ class Drawing extends React.Component {
 
     let drawing2 = <svg style={style}>
           {this.props.shapes.map(shape => shape.svgRender())}
+          {this.props.newShapes.map(shape => shape.svgRender())}
         </svg>
 
     return (
@@ -384,6 +385,7 @@ class DrawArea extends React.Component {
         })
         console.log(anySelected);
         let selectedPoints = [];
+
         if (anySelected) {
           this.state.shapes.forEach(line => {
             if (line.shape_ === 'line') {
@@ -397,20 +399,21 @@ class DrawArea extends React.Component {
             }
           })
         }
-        console.log(selectedPoints);
+        //console.log(selectedPoints);
         if (selectedPoints.length > 0) {
           selectedPoints.forEach(point => {
             this.solver.addEditVar(point.x)
                        .addEditVar(point.y);
           });
           this.solver.beginEdit();
-        } else {
-          this.solver.endEdit();
         }
+
         this.setState({
-          selectedPoints,
+          selectedPoints: selectedPoints,
           dragStart: point,
         });
+
+        console.log('selected Points:', this.state.selectedPoints);
 
         // let selectedPoints = this.state.
         break;
@@ -429,8 +432,8 @@ class DrawArea extends React.Component {
               newShape = new Rectangle;
               break;
             case "line":
-              console.log("shape: ", shape.points());
-              newShape = new Line;
+              console.log("shape: ", shape.toLine());
+              newShape = new Line({x:0,y:0}, this.solver);
               break;
           }
           newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
@@ -455,13 +458,13 @@ class DrawArea extends React.Component {
               newShape = new Rectangle;
               break;
             case "line":
-              newShape = new Line;
+              newShape = new Line({x:0,y:0}, this.solver);
               break;
           }
 
           if (shape.selected) {
             //points = (shape.shape_ === "line") ? points.concat(shape.points()) : points.concat(shape.points());
-            points = points.concat(shape.points());
+            points = points.concat(shape.toLine());
           }
 
           newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
@@ -478,93 +481,94 @@ class DrawArea extends React.Component {
         break;
       case "ZOOMIN":
       case "ZOOMOUT":
-        originalShapes = [];
-        points = [];
-
-        this.state.shapes.forEach(shape => {
-          let newShape = undefined;
-          switch (shape.shape_) {   //different shapes can be added here
-            case "freehand":
-            case "polygon":
-              newShape = new Polygon;
-              break;
-            case "rectangle":
-              newShape = new Rectangle;
-              break;
-            case "line":
-              newShape = new Line;
-              break;
-          }
-
-          //points = (shape.shape_ === "line") ? points.concat(shape.points()) : points.concat(shape.points());
-          points = points.concat(shape.points());
-
-          newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
-          originalShapes.push(newShape);
-        })
-
-        averageX = points.length > 1 ? points.reduce(functionAverageX) : undefined;
-        averageY = points.length > 1 ? points.reduce(functionAverageY) : undefined;
-
-        pivotPoint = {x:320, y:240} //320 and 240 is center for now, could use object centers {x:averageX, y:averageY}
-        //console.log("pivot point",pivotPoint);
-
-        let newShapes = [];
-        var pivot = pivotPoint;
-
-        let factor = undefined;
-
-        if (this.state.tool === "ZOOMOUT") {
-          factor = .9;
-        } else if (this.state.tool === "ZOOMIN") {
-          factor = 1.1;
-        }
-
-        // console.log("scale factor",factor);
+        // originalShapes = [];
+        // points = [];
         //
-        // console.log(originalShapes);
-
-        if (originalShapes.length > 0) {
-          originalShapes.forEach((shape) => {
-
-            const functionScale = (factor, shape) => {
-              let newShape = undefined;
-              switch (shape.shape_) {   //different shapes can be added here
-                case "freehand":
-                case "polygon":
-                  newShape = new Polygon;
-                  break;
-                case "rectangle":
-                  newShape = new Rectangle;
-                  break;
-                case "line":
-                  newShape = new Line;
-                  break;
-              }
-
-              newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
-
-              let newPoints = newShape.points().map(shapePoint => { //TODO: fix for line
-                //console.log(pivot);
-                let angle = this.functionGetAngle(shapePoint, pivot) + Math.PI;
-                let dist = this.distance(shapePoint, pivot);
-                let newPoint = {x:pivot.x+Math.cos(angle)*factor*dist, y:pivot.y+Math.sin(angle)*factor*dist};
-                return newPoint;
-              })
-
-                newShape.points(newPoints);
-
-                return newShape;
-              }
-
-            let newShape = functionScale(factor, shape);
-
-            newShapes.push(newShape);
-
-          });
-        };
-
-        this.setState({newShapes: newShapes});
+        // this.state.shapes.forEach(shape => {
+        //   let newShape = undefined;
+        //   switch (shape.shape_) {   //different shapes can be added here
+        //     case "freehand":
+        //     case "polygon":
+        //       newShape = new Polygon;
+        //       break;
+        //     case "rectangle":
+        //       newShape = new Rectangle;
+        //       break;
+        //     case "line":
+        //       console.log(shape);
+        //       newShape = new Line;
+        //       break;
+        //   }
+        //
+        //   //points = (shape.shape_ === "line") ? points.concat(shape.points()) : points.concat(shape.points());
+        //   points = points.concat(shape.points());
+        //
+        //   newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
+        //   originalShapes.push(newShape);
+        // })
+        //
+        // averageX = points.length > 1 ? points.reduce(functionAverageX) : undefined;
+        // averageY = points.length > 1 ? points.reduce(functionAverageY) : undefined;
+        //
+        // pivotPoint = {x:320, y:240} //320 and 240 is center for now, could use object centers {x:averageX, y:averageY}
+        // //console.log("pivot point",pivotPoint);
+        //
+        // let newShapes = [];
+        // var pivot = pivotPoint;
+        //
+        // let factor = undefined;
+        //
+        // if (this.state.tool === "ZOOMOUT") {
+        //   factor = .9;
+        // } else if (this.state.tool === "ZOOMIN") {
+        //   factor = 1.1;
+        // }
+        //
+        // // console.log("scale factor",factor);
+        // //
+        // // console.log(originalShapes);
+        //
+        // if (originalShapes.length > 0) {
+        //   originalShapes.forEach((shape) => {
+        //
+        //     const functionScale = (factor, shape) => {
+        //       let newShape = undefined;
+        //       switch (shape.shape_) {   //different shapes can be added here
+        //         case "freehand":
+        //         case "polygon":
+        //           newShape = new Polygon;
+        //           break;
+        //         case "rectangle":
+        //           newShape = new Rectangle;
+        //           break;
+        //         case "line":
+        //           newShape = new Line;
+        //           break;
+        //       }
+        //
+        //       newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
+        //
+        //       let newPoints = newShape.points().map(shapePoint => { //TODO: fix for line
+        //         //console.log(pivot);
+        //         let angle = this.functionGetAngle(shapePoint, pivot) + Math.PI;
+        //         let dist = this.distance(shapePoint, pivot);
+        //         let newPoint = {x:pivot.x+Math.cos(angle)*factor*dist, y:pivot.y+Math.sin(angle)*factor*dist};
+        //         return newPoint;
+        //       })
+        //
+        //         newShape.points(newPoints);
+        //
+        //         return newShape;
+        //       }
+        //
+        //     let newShape = functionScale(factor, shape);
+        //
+        //     newShapes.push(newShape);
+        //
+        //   });
+        // };
+        //
+        // this.setState({newShapes: newShapes});
 
         break;
       default:
@@ -608,22 +612,25 @@ class DrawArea extends React.Component {
     if (!this.state.isDrawing) {
       switch (this.state.tool) {
         case "SELECT":
-        if (this.state.mousedown === true) {
-          var point = this.relativeCoordinatesForEvent(mouseEvent);
-          let dx = point.x - this.state.dragStart.x;
-          let dy = point.y - this.state.dragStart.y;
-          this.state.selectedPoints.forEach(sPoint => {
-            console.log(sPoint);
-            console.log(this.solver._editVarList);
-            this.solver.suggestValue(sPoint.x, sPoint.x.value + dx)
-                       .suggestValue(sPoint.y, sPoint.y.value + dy)
-            this.solver.resolve();
-          });
+          //console.log('selected Points 2:', this.state.selectedPoints);
+          if (this.state.mousedown === true) {
+            var point = this.relativeCoordinatesForEvent(mouseEvent);
+            let dx = point.x - this.state.dragStart.x;
+            let dy = point.y - this.state.dragStart.y;
 
-        }
-        this.setState({
-          dragStart: point
-        });
+            console.log('selectedPoints: ', this.state.selectedPoints);
+            this.state.selectedPoints.forEach(sPoint => {
+              // console.log(sPoint);
+              // console.log(this.solver._editVarList);
+              this.solver.suggestValue(sPoint.x, sPoint.x.value + dx)
+                         .suggestValue(sPoint.y, sPoint.y.value + dy)
+                         .resolve();
+            });
+
+          }
+          this.setState({
+            dragStart: point
+          });
         break;
         case "EDIT": //TODO: change this to use coincident constraint with pointer
           // if (this.state.mousedown && this.state.selected) {
@@ -679,17 +686,17 @@ class DrawArea extends React.Component {
                     newShape = new Rectangle;
                     break;
                   case "line":
-                    newShape = new Line;
+                    newShape = new Line({x:0,y:0}, this.solver);
                     break;
                 }
 
                 newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
-                let newPoints = newShape.points().map(shapePoint => {
+                let newPoints = newShape.toLine().map(shapePoint => {
                   //console.log(point.x-this.state.pivotPoint.x, point.y-this.state.pivotPoint.y)
                   return ({x:shapePoint.x+(point.x-this.state.pivotPoint.x), y:shapePoint.y+(point.y-this.state.pivotPoint.y)}) //denomiator sets speed of movement
                 });
                 //console.log(newPoints);
-                newShape.points(newPoints);
+                newShape.pointsToCPoints(newPoints);
                 newShapes.push(newShape);
               }
             });
@@ -716,12 +723,12 @@ class DrawArea extends React.Component {
                 newShape = new Rectangle;
                 break;
               case "line":
-                newShape = new Line;
+                newShape = new Line({x:0,y:0}, this.solver);
                 break;
             }
             newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
 
-            let newPoints = newShape.points().map(shapePoint => { //TODO: fix for lines to points()
+            let newPoints = newShape.toLine().map(shapePoint => { //TODO: fix for lines to points()
 
               let distanceToPivot = this.distance(shapePoint, pivot);
               let angleWithPivot = this.functionGetAngle(shapePoint, pivot);
@@ -734,7 +741,7 @@ class DrawArea extends React.Component {
               return newPoint;
             })
 
-              newShape.points(newPoints);
+              newShape.pointsToCPoints(newPoints);
 
               return newShape;
             }
@@ -788,19 +795,19 @@ class DrawArea extends React.Component {
                       newShape = new Rectangle;
                       break;
                     case "line":
-                      newShape = new Line;
+                      newShape = new Line({x:0,y:0}, this.solver);
                       break;
                   }
                   newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
 
-                  let newPoints = newShape.points().map(shapePoint => {
+                  let newPoints = newShape.toLine().map(shapePoint => {
                     let angle = this.functionGetAngle(shapePoint, pivot) + Math.PI;
                     let dist = this.distance(shapePoint, pivot);
                     let newPoint = {x:pivot.x+Math.cos(angle)*factor*dist, y:pivot.y+Math.sin(angle)*factor*dist};
                     return newPoint;
                   })
 
-                    newShape.points(newPoints);
+                    newShape.pointsToCPoints(newPoints);
 
                     return newShape;
                   }
@@ -897,11 +904,15 @@ class DrawArea extends React.Component {
       mousedown: false,
     })
 
-    if (inCanvasBoolean || this.state.tool === "POLYGON" || this.state.tool === "RECTANGLE" || this.state.tool === "FREEHAND") { //this is a hack not sure why it is neccesary
+    if (inCanvasBoolean || this.state.tool === "POLYGON" || this.state.tool === "RECTANGLE" || this.state.tool === "FREEHAND" || this.state.tool === "SELECT") { //this is a hack not sure why it is neccesary
       //console.log(this.state.tool);
       switch (this.state.tool) {
         case "FREEHAND":
           this.setState({ isDrawing: false });
+          break;
+        case "SELECT":
+          //console.log("ender");
+          this.solver.endEdit();
           break;
         case "EDIT":
           //console.log(this.state.selected);
@@ -999,16 +1010,31 @@ class DrawArea extends React.Component {
   }
 
   coincident() { //assumes selected is a point
-    let sPoints = this.state.selectedPoints;
-    let p = sPoints.length;
+    let points = this.state.selectedPoints;
+    let pl = points.length;
 
-    let oldConstraints = this.state.constraints;
-    let c = CoincidentConstraint(sPoints[p-1], sPoints[p-2]);
-    oldConstraints.push(c);
-    this.setState({
-      constraints: oldConstraints,
-    });
-    this.constraintUpdate();
+
+    if (pl === 2) {
+      var eq = new c.Equation(points[pl-1].x, new c.Expression(points[0].x));
+      var eq2 = new c.Equation(points[pl-1].y, new c.Expression(points[0].y));
+
+      this.solver.addConstraint(eq)
+                 .addConstraint(eq2)
+    }
+    //cle = c.Expression.fromConstant(db[0].y).plus(db[1].y).divide(2);
+    //cleq = new c.Equation(mp[0].y, cle);
+
+    //solver.addConstraint(cleq);
+    // let sPoints = this.state.selectedPoints;
+    // let p = sPoints.length;
+    //
+    // let oldConstraints = this.state.constraints;
+    // let c = CoincidentConstraint(sPoints[p-1], sPoints[p-2]);
+    // oldConstraints.push(c);
+    // this.setState({
+    //   constraints: oldConstraints,
+    // });
+    // this.constraintUpdate();
   }
 
   horizontal() { //assumes selected is a line
@@ -1291,6 +1317,7 @@ class DrawArea extends React.Component {
   }
 
   render() {
+    this.solver.resolve;
     let pointer = "";
 
     switch (this.state.tool) { //tooltips

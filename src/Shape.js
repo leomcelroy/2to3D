@@ -11,9 +11,9 @@ class Line {
     this.shape_ = 'line';
     this.p1_ = new c.Point(startingPoint.x, startingPoint.y);
     this.p2_ = new c.Point(startingPoint.x, startingPoint.y);
-    this.pointSelectDistance_ = 15; //todo: setter / getter
-    this.lineSelectDistance_ = 14;
-    this.objectSelectDistance_ = 5;
+    this.pointSelectDistance_ = 7; //todo: setter / getter
+    this.lineSelectDistance_ = 1;
+    this.objectSelectDistance_ = 1;
     //this.length_ = Math.sqrt(distanceSquared(this.p1_, this.p2_));
     this.selected = false;
     this.p1_selected = false;
@@ -38,6 +38,11 @@ class Line {
   p2(p) { if (p){ this.p2_ = p; return this;} return this.p2_};
 
   toLine() { return [cPointToPoint(this.p1_), cPointToPoint(this.p2_)] };
+
+  pointsToCPoints(points) {
+    this.p1_ = new c.Point(points[0].x, points[0].y);
+    this.p2_ = new c.Point(points[1].x, points[1].y);
+  }
 
   toLines() { return [this.toLine()] };
 
@@ -108,13 +113,13 @@ class Line {
   }
 
   svgRender() {
-      let circle1Color = this.p1_selected ? "black" : "blue";
-      let circle2Color = this.p2_selected ? "black" : "blue";
-      let lineColor = this.selected ? "black" : "blue";
+      let circle1Color = this.p1_selected ? "blue" : "black";
+      let circle2Color = this.p2_selected ? "blue" : "black";
+      let lineColor = this.selected ? "blue" : "black";
 
       let style = {
         fill: "none",
-        strokeWidth: "1px",
+        strokeWidth: "3px",
         stroke: lineColor,
         strokeLinejoin: "round",
         strokeLinecap: "round",
@@ -124,9 +129,9 @@ class Line {
 
       return (
         <svg>
-          <circle cx={`${this.p1_.x.value}`} cy={`${this.p1_.y.value}`} r="2" fill={circle1Color}/>
+          <circle cx={`${this.p1_.x.value}`} cy={`${this.p1_.y.value}`} r="5" fill={circle1Color}/>
           <path d={pathData} style={style}/>
-          <circle cx={`${this.p2_.x.value}`} cy={`${this.p2_.y.value}`} r="2" fill={circle2Color}/>
+          <circle cx={`${this.p2_.x.value}`} cy={`${this.p2_.y.value}`} r="5" fill={circle2Color}/>
         </svg>
       )
   }
