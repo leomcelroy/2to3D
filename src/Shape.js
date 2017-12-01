@@ -1,4 +1,5 @@
 import {CoincidentConstraint, ParallelLineConstraint, PerpendicularLineConstraint, VerticalLineConstraint, HorizontalLineConstraint, angle} from './GeometricConstraintSolver.js';
+import React from 'react';
 var c = require('cassowary');
 //look at maker.js?
 
@@ -73,6 +74,30 @@ class Line {
 
   rendersPath() {
     return false;
+  }
+
+  svgRender() {
+      let circle1Color = this.p1_selected ? "black" : "blue";
+      let circle2Color = this.p2_selected ? "black" : "blue";
+      let lineColor = this.selected ? "black" : "blue";
+
+      let style = {
+        fill: "none",
+        strokeWidth: "1px",
+        stroke: lineColor,
+        strokeLinejoin: "round",
+        strokeLinecap: "round",
+      }
+
+      const pathData = "M " + this.toLine().map(p => `${p['x']} ${p['y']}`);
+
+      return (
+        <svg>
+          <circle cx={`${this.p1_.x.value}`} cy={`${this.p1_.y.value}`} r="2" fill={circle1Color}/>
+          <path d={pathData} style={style}/>
+          <circle cx={`${this.p2_.x.value}`} cy={`${this.p2_.y.value}`} r="2" fill={circle2Color}/>
+        </svg>
+      )
   }
 }
 

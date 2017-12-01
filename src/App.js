@@ -137,8 +137,12 @@ class Drawing extends React.Component {
 
       </svg>
 
+    let drawing2 = <svg style={style}>
+          {this.props.shapes.map(shape => shape.svgRender())}
+        </svg>
+
     return (
-      drawing
+      drawing2
     )
   }
 }
