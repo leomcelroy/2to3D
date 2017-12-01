@@ -180,7 +180,7 @@ class DrawArea extends React.Component {
       pivotPoint: undefined,
       originalShapes: undefined,
       newShapes: [],
-      selectedLines: [],
+      //selectedLines: [], //i think we don't need this
       selectedPoints: [],
       originalPoint: undefined,
       dragStart: undefined,
@@ -972,34 +972,32 @@ class DrawArea extends React.Component {
       this.solver.addConstraint(eq)
                  .addConstraint(eq2)
     }
-
+    //re-render
+    this.setState({});
   }
 
-  horizontal() { //assumes selected is a line
-    // this.state.selected.p2_.y = this.state.selected.p1_.y;
-    this.state.selectedLines[this.state.selectedLines.length-1].angle(0);
-    this.setState({}); //call render
-  }
-
-  makeHorizontal() {
-    let oldConstraints = this.state.constraints;
-    let c = HorizontalLineConstraint(this.state.selectedLines[this.state.selectedLines.length-1]);
-    oldConstraints.push(c);
-    this.setState({
-      constraints: oldConstraints,
+  makeHorizontal() { //sets all selected lines to be horizontal
+    this.state.shapes.forEach(shape => {
+      if (shape.shape_ === 'line' && shape.selected) {
+        var eq = new c.Equation(shape.p1_.y, shape.p2_.y);
+        this.solver.addConstraint(eq);
+      }
     });
-    this.constraintUpdate();
+    //re-render
+    this.setState({});
   }
 
-  makeVertical() {
-    let oldConstraints = this.state.constraints;
-    let c = VerticalLineConstraint(this.state.selectedLines[this.state.selectedLines.length-1]);
-    oldConstraints.push(c);
-    this.setState({
-      constraints: oldConstraints,
+  makeVertical() { //sets all selected lines to be vertical
+    this.state.shapes.forEach(shape => {
+      if (shape.shape_ === 'line' && shape.selected) {
+        var eq = new c.Equation(shape.p1_.x, shape.p2_.x);
+        this.solver.addConstraint(eq);
+      }
     });
-    this.constraintUpdate();
+    //re-render
+    this.setState({});
   }
+
 
   makeParallel() {
     let oldConstraints = this.state.constraints;
