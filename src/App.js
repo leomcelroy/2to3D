@@ -184,6 +184,8 @@ class DrawArea extends React.Component {
       selectedPoints: [],
       originalPoint: undefined,
       dragStart: undefined,
+      onDragEndCallbacks: [],
+      mouseDragged: false,
 
       solverPoints: [], //holds array of c.Point objects
       //file: undefined,
@@ -388,7 +390,13 @@ class DrawArea extends React.Component {
         //click and drag
         let anySelected = false;
         this.state.shapes.forEach((shape) => {
-          anySelected = anySelected || shape.selectObjectAt(point);
+          let callback = shape.selectObjectAt(point);
+          if (callback) {
+            let oldCallbacks = this.state.onDragEndCallbacks;
+            oldCallbacks.push(callback);
+            this.setState({onDragEndCallbacks: oldCallbacks});
+            anySelected = true;
+          }
         })
         console.log(anySelected);
         let selectedPoints = [];
@@ -622,10 +630,12 @@ class DrawArea extends React.Component {
                          .resolve();
             });
 
+            this.setState({
+              dragStart: point,
+              mouseDragged: true,
+            });
           }
-          this.setState({
-            dragStart: point
-          });
+
         break;
         case "EDIT": //TODO: change this to use coincident constraint with pointer
           break;
@@ -862,6 +872,14 @@ class DrawArea extends React.Component {
         case "SELECT":
           //console.log("ender");
           this.solver.endEdit();
+          console.log("dragged", this.state.mouseDragged);
+          if (!this.state.mouseDragged) {
+              this.state.onDragEndCallbacks.forEach(callback => callback());
+          }
+          this.setState({
+            mouseDragged: false,
+            onDragEndCallbacks: [],
+          });
           break;
         case "EDIT":
           //console.log(this.state.selected);

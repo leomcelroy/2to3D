@@ -58,17 +58,29 @@ class Line {
 
   selectObjectAt(point) {
     if (distanceSquared(point, cPointToPoint(this.p1_)) < this.pointSelectDistance_**2) {
-      this.p1_selected = !this.p1_selected;
-      return true;
+      if (this.p1_selected) {
+        //return a callbcak to be called on mouseup (if mouse was not dragged)
+        return () => {this.p1_selected = false};
+      } else {
+        this.p1_selected = true;
+        return () => {/*do nothing*/};
+      }
     } else if (distanceSquared(point, cPointToPoint(this.p2_)) < this.pointSelectDistance_**2) {
-      this.p2_selected = !this.p2_selected;
-      return true;
+      if (this.p2_selected) {
+        return () => {this.p2_selected = false};
+      } else {
+        this.p2_selected = true;
+        return () => {/*do nothing*/};
+      }
     } else if (onLine(point, cPointToPoint(this.p1_), cPointToPoint(this.p2_), this.pointSelectDistance_)) {
-      this.selected = !this.selected;
-      this.p1_selected = this.p2_selected = this.selected;
-      return true;
+      if (this.selected) {
+        return () => {this.selected = this.p1_selected = this.p2_selected = false};
+      } else {
+        this.selected = this.p1_selected = this.p2_selected = true;
+        return () => {/*do nothing*/};
+      }
     }
-    return false;
+    return undefined;
   }
 
   selectedPoints() {
