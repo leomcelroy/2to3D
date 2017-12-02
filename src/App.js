@@ -186,6 +186,7 @@ class DrawArea extends React.Component {
       dragStart: undefined,
       onDragEndCallbacks: [],
       mouseDragged: false,
+      parallelConstraints: [],
 
       solverPoints: [], //holds array of c.Point objects
       //file: undefined,
@@ -1002,23 +1003,16 @@ class DrawArea extends React.Component {
 
 
   makeParallel() {
-    let oldConstraints = this.state.constraints;
-    let c = ParallelLineConstraint(this.state.selectedLines[this.state.selectedLines.length-2], this.state.selectedLines[this.state.selectedLines.length-1]);
-    oldConstraints.push(c);
-    this.setState({
-      constraints: oldConstraints,
-    });
-    this.constraintUpdate();
+    
+
+
+    //re-render
+    this.setState({});
   }
 
+
   makePerpendicular() {
-    let oldConstraints = this.state.constraints;
-    let c = PerpendicularLineConstraint(this.state.selectedLines[this.state.selectedLines.length-2], this.state.selectedLines[this.state.selectedLines.length-1]);
-    oldConstraints.push(c);
-    this.setState({
-      constraints: oldConstraints,
-    });
-    this.constraintUpdate();
+
   }
 
 //------------------------component mount functions------------------------
