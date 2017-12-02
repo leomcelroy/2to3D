@@ -28,6 +28,7 @@ class DrawArea extends React.Component {
       mouseDragged: false,
       svgMouse: undefined,
       workpieceSize: {x:500, y:500},
+      clipboard: [],
 
       solverPoints: [], //holds array of c.Point objects
       //file: undefined,
@@ -596,7 +597,7 @@ class DrawArea extends React.Component {
     //end of testing
   }
 
-  coincident() { //assumes selected is a point
+  makeCoincident() { //assumes selected is a point
     let points = this.state.selectedPoints;
     let pl = points.length;
 
@@ -613,6 +614,20 @@ class DrawArea extends React.Component {
     this.setState({});
   }
 
+  makeFixed() { //assumes selected is a point
+    let points = this.state.selectedPoints;
+    let pl = points.length;
+
+
+    if (pl === 1) {
+      //console.log("coincident!")
+      this.solver.addConstraint(new c.Equation(points[pl-1].x.value, new c.Expression(points[pl-1].x)))
+                 .addConstraint(new c.Equation(points[pl-1].y.value, new c.Expression(points[pl-1].y)));
+    }
+    //re-render
+    this.setState({});
+  }
+
   makeHorizontal() { //sets all selected lines to be horizontal
     this.state.shapes.forEach(shape => {
       if (shape.shape_ === 'line' && shape.selected) {
@@ -620,6 +635,67 @@ class DrawArea extends React.Component {
         this.solver.addConstraint(eq);
       }
     });
+    //re-render
+    this.setState({});
+  }
+
+  setDistance(e, solver) {
+    var expr = function(a, b) {
+      return new c.Expression(a, b);
+    }
+
+    c.Expression.prototype.multiply = function(x) {
+      if (typeof x == 'number') {
+        return (this.clone()).multiplyMe(x);
+
+      } else if (x instanceof c.Variable) {
+        return this.clone().addVariable(x, 1);
+      } else if (x instanceof c.Expression) {
+        return this.clone().addExpression(x, 1);
+      } else {
+        if (this.isConstant) {
+          return x.times(this.constant);
+        } else if (x.isConstant) {
+          return this.times(x.constant);
+        } else {
+          throw new c.NonExpression();
+        }
+      }
+    };
+
+    var constant = function(val) {
+      var v = new c.Variable({ value : val });
+      v.isConstant = true;
+      return v;
+    }
+
+    // helper function for creating "point-point distance" constraints
+    var distance = function(p1, p2) {
+
+      var x = p1.x.value - p2.x.value;
+      var y = p1.y.value - p2.y.value;
+      var distanceSquared = x**2 + y**2;
+      console.log("distance", distanceSquared);
+
+      var dx = expr(p1.x).minus(p2.x);
+      var dy = expr(p1.y).minus(p2.y);
+
+      var vardist = dx.multiply(dx).plus(dy.multiply(dy));
+
+      var eq = new c.Equation(vardist, -distanceSquared);
+      solver.addConstraint(eq);
+
+      console.log(eq.toString())
+    };
+
+    let points = this.state.selectedPoints;
+    let pl = points.length;
+
+
+    if (pl === 2) {
+      //console.log("coincident!")
+      distance(points[0], points[1])
+    }
     //re-render
     this.setState({});
   }
@@ -666,6 +742,45 @@ class DrawArea extends React.Component {
   }
 
 //------------------------------------------------
+
+  copy(e) { //TODO: doesnt work with cPoints
+    let newClipboard = [];
+    this.state.shapes.forEach(shape => {
+      if (shape.selected) {
+        let newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
+        newClipboard.push(newShape);
+      }
+    })
+
+    this.setState({clipboard:newClipboard});
+
+    // console.log("clipboard",this.state.clipboard);
+  }
+
+  paste(e) {
+    let oldShapes = this.state.shapes;
+    let copied = this.state.clipboard;
+
+    copied.forEach((shape) => {
+
+      let newPoints = shape.toLine().map(shapePoint => {
+          return ({x:shapePoint.x+(10), y:shapePoint.y+(10)})
+        });
+
+      if (shape.shape_ === "freehand") {
+        shape.points(newPoints);
+        //console.log(newShape);
+      } else {
+        shape.pointsToCPoints(newPoints, this.solver);
+      }
+    });
+
+    let newShapes = oldShapes.concat(copied);
+
+
+    this.setState({shapes:newShapes});
+    console.log(this.state.shapes);
+  }
 
   handleDownload(e) {
     e.preventDefault();
@@ -889,9 +1004,6 @@ class DrawArea extends React.Component {
       case 70: //f
         this.setState({tool:"FREEHAND"})
         break;
-      case 69: //e
-        this.setState({tool:"EDIT"})
-        break;
       case 65: //a
         this.setState({tool:"SELECT"})
         break;
@@ -904,14 +1016,14 @@ class DrawArea extends React.Component {
       case 83: //s
         this.setState({tool:"SCALE"})
         break;
-      case 187: //+
-        this.setState({tool:"ZOOMIN"})
-        break;
-      case 189: //-
-        this.setState({tool:"ZOOMOUT"})
-        break;
       case 72: //h
         this.setState({tool:"PAN"})
+        break;
+      case 83: //s
+        this.setState({tool:"SCALE"})
+        break;
+      case 78: //n
+        this.setState({tool:undefined})
         break;
       case 8: //delete
         let unselectedShapes = [];
@@ -922,9 +1034,18 @@ class DrawArea extends React.Component {
         })
         this.setState( {shapes: unselectedShapes, newShapes:[]} );
         break;
-      case 84: //test
-        //console.log(this.state.file)
-        break;
+      // case 187: //+
+      //   this.setState({tool:"ZOOMIN"})
+      //   break;
+      // case 189: //-
+      //   this.setState({tool:"ZOOMOUT"})
+      //   break;
+      // case 69: //e
+      //   this.setState({tool:"EDIT"})
+      //   break;
+      // case 84: //test
+      //   console.log(this.state.file)
+      //   break;
       default:
         return;
     }
@@ -1078,9 +1199,9 @@ class DrawArea extends React.Component {
             <tr><td><b>Tools</b></td></tr>
             <tr><td><button style={this.state.tool === "LINE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("LINE")}>Line</button></td></tr>
             <tr><td><button style={this.state.tool === "FREEHAND" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("FREEHAND")}>Free Hand</button></td></tr>
-            <tr><td><button style={this.state.tool === "RECTANGLE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("RECTANGLE")}>Rectangle</button></td></tr>
-            <tr><td><button style={this.state.tool === "POLYGON" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("POLYGON")}>Polygon</button></td></tr>
-            <tr><td><button style={this.state.tool === "BEZIER" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("BEZIER")}>Bezier</button></td></tr>
+            <tr><td><button style={this.state.tool === "RECTANGLE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("RECTANGLE")}>TODO: Rectangle</button></td></tr>
+            <tr><td><button style={this.state.tool === "POLYGON" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("POLYGON")}>TODO: Polygon</button></td></tr>
+            <tr><td><button style={this.state.tool === "BEZIER" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("BEZIER")}>TODO: Bezier</button></td></tr>
             <tr><td><button style={this.state.tool === "SELECT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SELECT")}>Select</button></td></tr>
             <tr><td>Direct Transform</td></tr>
             <tr><td><button style={this.state.tool === "MOVE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("MOVE")}>Move</button></td></tr>
@@ -1094,25 +1215,30 @@ class DrawArea extends React.Component {
             <tr><td><b>Constraints</b></td></tr>
             <tr>
               <td>
-                <button style={defaultButtonStyle} onClick={(e) => {}}>TODO: Dimension</button>
-                <button style={defaultButtonStyle} onClick={(e) => this.coincident(e)}>Coincident</button>
-              </td>
-            </tr>
-            <tr>
-              <td>
                 <button style={defaultButtonStyle} onClick={(e) => this.makeHorizontal(e)}>Horizontal</button>
                 <button style={defaultButtonStyle} onClick={(e) => this.makeVertical(e)}>Vertical</button>
-                <button style={defaultButtonStyle} onClick={(e) => this.test(e)}>Test</button>
+                <button style={defaultButtonStyle} onClick={(e) => this.makeCoincident(e)}>Coincident</button>
               </td>
             </tr>
             <tr>
               <td>
-                <button style={defaultButtonStyle} onClick={(e) => this.makeParallel(e)}>Parallel</button>
-                <button style={defaultButtonStyle} onClick={(e) => this.makePerpendicular(e)}>Perpendicular</button>
-                <button style={defaultButtonStyle} onClick={(e) => this.test(e)}>TODO: Fixed</button>
+                <button style={defaultButtonStyle} onClick={(e) => this.setDistance(e, this.solver)}>TODO: Distance</button>
+                <button style={defaultButtonStyle} onClick={(e) => {}}>TODO: Angle</button>
+                <button style={defaultButtonStyle} onClick={(e) => this.test(e)}>TODO: Equal</button>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <button style={defaultButtonStyle} onClick={(e) => this.makeParallel(e)}>TODO: Parallel</button>
+                <button style={defaultButtonStyle} onClick={(e) => this.makePerpendicular(e)}>TODO: Perpendicular</button>
+                <button style={defaultButtonStyle} onClick={(e) => this.makeFixed(e)}>Fixed</button>
               </td>
             </tr>
             <tr><td><b>File</b></td></tr>
+            <tr><td>
+              <button style={downloadButtonStyle} onClick={(e) => this.copy(e)}>Copy</button>
+              <button style={downloadButtonStyle} onClick={(e) => this.paste(e)}>Paste</button>
+            </td></tr>
             <tr><td>
               <form>
                 <div>
