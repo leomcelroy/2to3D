@@ -6,10 +6,6 @@ import {AutoSizer} from 'react-virtualized';
 
 var c = require('cassowary');
 
-
-
-const SELECT_DISTANCE = 7;
-
 class DrawArea extends React.Component {
   constructor() {
     super();
@@ -163,7 +159,7 @@ class DrawArea extends React.Component {
             });
         }
         break;
-      case "RECTANGLE":
+      case "RECTANGLE": //TODO: update to lines
         let rectangle = new Rectangle(point);
 
         oldShapes.push(rectangle);
@@ -194,10 +190,12 @@ class DrawArea extends React.Component {
         //click and drag
         let anySelected = false;
         this.state.shapes.forEach((shape) => {
-          let callback = shape.selectObjectAt(point);
+          let callback = shape.selectedObjectAt(point);
           if (callback) {
             let oldCallbacks = this.state.onDragEndCallbacks;
-            oldCallbacks.push(callback);
+            if (shape.shape_ !== "freehand") { //freehands shouldn't be dragged
+              oldCallbacks.push(callback);
+            }
             this.setState({onDragEndCallbacks: oldCallbacks});
             anySelected = true;
           }
@@ -206,15 +204,21 @@ class DrawArea extends React.Component {
         let selectedPoints = [];
 
         if (anySelected) {
-          this.state.shapes.forEach(line => {
-            if (line.shape_ === 'line') {
-              selectedPoints = selectedPoints.concat(line.selectedPoints());
+          this.state.shapes.forEach(shape => {
+            if (shape.shape_ === 'line') {
+              selectedPoints = selectedPoints.concat(shape.selectedPoints());
+            } else {
+              if (shape.selectedObjectAt(point)) {
+                shape.select();
+              }
             }
           });
         } else {
-          this.state.shapes.forEach(line => {
-            if (line.shape_ === 'line') {
-              line.deselect();
+          this.state.shapes.forEach(shape => {
+            if (shape.shape_ === 'line') {
+              shape.deselect();
+            } else {
+              shape.select(false);
             }
           })
         }
@@ -295,15 +299,6 @@ class DrawArea extends React.Component {
     return (this.state.svgMouse);
   }
 
-  isPointOrArrayOfPoints(shape) {
-    if (Array.isArray(shape)===true) {
-      let result = shape.map(point => {return point.x !== undefined && point.y !== undefined;})
-      return result.every(entry => entry===true)
-    } else {
-      return shape.x !== undefined && shape.y !== undefined;
-    }
-  }
-
   functionGetAngle(p1, p2) {return Math.atan2(p2.y - p1.y, p2.x - p1.x);}
 
   handleMouseMove(mouseEvent) {
@@ -349,7 +344,14 @@ class DrawArea extends React.Component {
                 let newPoints = newShape.toLine().map(shapePoint => {
                     return ({x:shapePoint.x+(point.x-this.state.pivotPoint.x), y:shapePoint.y+(point.y-this.state.pivotPoint.y)}) //denomiator sets speed of movement
                   });
-                newShape.pointsToCPoints(newPoints, this.solver);
+
+                if (shape.shape_ === "freehand") {
+                  newShape.points(newPoints);
+                  //console.log(newShape);
+                } else {
+                  newShape.pointsToCPoints(newPoints, this.solver);
+                }
+
                 newShapes.push(newShape);
 
               }
@@ -375,7 +377,11 @@ class DrawArea extends React.Component {
               return newPoint;
             })
 
+            if (shape.shape_ === "freehand") {
+              newShape.points(newPoints);
+            } else {
               newShape.pointsToCPoints(newPoints, this.solver);
+            }
 
               return newShape;
             }
@@ -428,10 +434,14 @@ class DrawArea extends React.Component {
                     return newPoint;
                   })
 
+                  if (shape.shape_ === "freehand") {
+                    newShape.points(newPoints);
+                  } else {
                     newShape.pointsToCPoints(newPoints, this.solver);
-
-                    return newShape;
                   }
+
+                  return newShape;
+                }
 
                 let newShape = functionScale(factor, shape);
 
@@ -657,8 +667,12 @@ class DrawArea extends React.Component {
 
 //------------------------------------------------
 
-  handleDownload() {
-    let filename = "test.svg";
+  handleDownload(e) {
+    e.preventDefault();
+    let filename = document.getElementById('downloadName').value;
+    if (filename === "") { filename = "noName"};
+    filename = `${filename}.svg`;
+
     let shapeArray = this.state.shapes;
     let lineArray = [];
     shapeArray.forEach((shape) => {
@@ -690,8 +704,12 @@ class DrawArea extends React.Component {
     }
   }
 
-  handleSave() {
-    let filename = "test.txt";
+  handleSave(e) {
+    e.preventDefault();
+    let filename = document.getElementById('saveName').value;
+    if (filename === "") { filename = "noName"};
+    filename = `${filename}.txt`;
+
     let state = this.state;
     let text = JSON.stringify(state);
 
@@ -726,27 +744,31 @@ class DrawArea extends React.Component {
         let oldState = JSON.parse(stateOfInterest[0]);
         let state = this.state;
         let oldShapes = oldState.shapes;
+        console.log("oldShapes",oldShapes);
 
         let newShapes = oldShapes.map(oldShape => {
-          console.log(oldShape.shape_);
           let newShape = undefined;
 
           switch (oldShape.shape_) {   //different shapes can be added here
-            case "line":
-              newShape = new Line({x:0,y:0}, this.solver);
-              break;
             case "freehand":
-            case "polygon":
-              newShape = new Polygon;
+              newShape = new Freehand;
               break;
             case "rectangle":
               newShape = new Rectangle;
+              break;
+            case "line":
+              newShape = new Line({x:0,y:0}, this.solver);
+              break;
+            case "bezier":
+              newShape = new Bezier;
               break;
           }
 
           newShape = Object.assign( Object.create( Object.getPrototypeOf(newShape)), oldShape); //this is so we maintain class methods
           return newShape
         })
+
+        console.log("newShapes", newShapes);
 
         this.setState({
           isDrawing: false,
@@ -759,9 +781,17 @@ class DrawArea extends React.Component {
           pivotPoint: undefined,
           originalShapes: undefined,
           newShapes: [],
-          selectedLines: [],
+          //selectedLines: [], //i think we don't need this
           selectedPoints: [],
           originalPoint: undefined,
+          dragStart: undefined,
+          onDragEndCallbacks: [],
+          mouseDragged: false,
+          svgMouse: undefined,
+          workpieceSize: {x:500, y:500},
+
+          solverPoints: [], //holds array of c.Point objects
+          //file: undefined,
         });
 
         this.setState({shapes:newShapes});
@@ -800,9 +830,11 @@ class DrawArea extends React.Component {
     let width = parseInt(document.getElementById('width').value);
     let height = parseInt(document.getElementById('height').value);
 
-    this.setState({
-      workpieceSize : {x:width, y:height}
-    })
+    if (width > 0 && height > 0) {
+      this.setState({
+        workpieceSize : {x:width, y:height}
+      })
+    }
   }
 
   constraintUpdate() {
@@ -1092,8 +1124,24 @@ class DrawArea extends React.Component {
                 </div>
               </form>
             </td></tr>
-            <tr><td><button style={downloadButtonStyle} onClick={(e) => this.handleDownload(e)}>Download SVG</button></td></tr>
-            <tr><td><button style={downloadButtonStyle} onClick={(e) => this.handleSave(e)}>Save</button></td></tr>
+            <tr><td>
+              <form>
+                <div>
+                  <button style={downloadButtonStyle} onClick={(e) => this.handleDownload(e)}>Download SVG</button>
+                  <label>name: </label>
+                  <input type="text" id="downloadName" name="downloadName"/>
+                </div>
+              </form>
+            </td></tr>
+            <tr><td>
+              <form>
+                <div>
+                  <button style={downloadButtonStyle} onClick={(e) => this.handleSave(e)}>Save</button>
+                  <label>name: </label>
+                  <input type="text" id="saveName" name="saveName"/>
+                </div>
+              </form>
+            </td></tr>
             <tr><td><div style={downloadButtonStyle}>Upload: <input type="file" name="uploadedFile" onChange={(e) => this.handleUpload(e)}/> </div></td></tr>
             <tr><td><a href="http://fabmodules.org/" target="_blank" style={downloadButtonStyle}>fab modules</a></td></tr>
           </tbody>
