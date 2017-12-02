@@ -102,7 +102,6 @@ class DrawArea extends React.Component {
             isDrawing: false
           })
         } else {
-          //NEW STUFF
           let line = new Line(point, this.solver);
           this.solver
             .addEditVar(line.p2_.x)
@@ -113,26 +112,6 @@ class DrawArea extends React.Component {
             shapes: oldShapes,
             isDrawing: true,
           });
-            // console.log("shapes", this.state.shapes);
-
-
-          //SOLVER STUFF
-          //create c.Point(s)
-          // let p1 = new c.Point(point.x, point.y);
-          // let p2 = new c.Point(point.x, point.y);
-          // //add points to solver
-          // this.solver
-          //   .addPointStays([p1, p2])
-          //   .addEditVar(p2.x)
-          //   .addEditVar(p2.y)
-          //   .beginEdit();
-          //
-          // let oldPoints = this.state.solverPoints;
-          // oldPoints.push(p1);
-          // oldPoints.push(p2);
-          // this.setState({
-          //   solverPoints: oldPoints
-          // });
         }
         break;
       case "POLYGON":
@@ -183,23 +162,6 @@ class DrawArea extends React.Component {
               isDrawing: true,
             });
         }
-        // if (this.state.isDrawing) {
-        //   this.solver.endEdit();
-        //   this.setState({
-        //     isDrawing: false
-        //   })
-        // } else {
-        //   //NEW STUFF
-        //   let line = new Line(point, this.solver);
-        //   this.solver
-        //     .addEditVar(line.p2_.x)
-        //     .addEditVar(line.p2_.y)
-        //     .beginEdit();
-        //   oldShapes.push(line);
-        //   this.setState({
-        //     shapes: oldShapes,
-        //     isDrawing: true,
-        //   });
         break;
       case "RECTANGLE":
         let rectangle = new Rectangle(point);
@@ -240,7 +202,7 @@ class DrawArea extends React.Component {
             anySelected = true;
           }
         })
-        console.log(anySelected);
+        //console.log(anySelected);
         let selectedPoints = [];
 
         if (anySelected) {
@@ -278,24 +240,8 @@ class DrawArea extends React.Component {
         var point = this.relativeCoordinatesForEvent(mouseEvent);
         let originalShapes = [];
         this.state.shapes.forEach(shape => {
-          let newShape = new Line({x:0,y:0},this.solver)
-          newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
+          let newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
           originalShapes.push(newShape);
-          // switch (shape.shape_) {   //different shapes can be added here
-          //   case "freehand":
-          //   case "polygon":
-          //     newShape = new Polygon;
-          //     break;
-          //   case "rectangle":
-          //     newShape = new Rectangle;
-          //     break;
-          //   case "line":
-          //     console.log("shape: ", shape.toLine());
-          //     newShape = new Line({x:100,y:100}, this.solver);
-          //     break;
-          // }
-          // newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
-          // originalShapes.push(newShape);
         })
         this.setState({pivotPoint:point, originalShapes:originalShapes});
         break;
@@ -514,21 +460,6 @@ class DrawArea extends React.Component {
           .suggestValue(lastLine.p2_.y, point.y)
           .resolve();
         this.setState({});
-
-        //NEW STUFF
-        // var lastPoint = this.state.solverPoints[this.state.solverPoints.length-1];
-        // this.solver
-        //   .suggestValue(lastPoint.x, point.x)
-        //   .suggestValue(lastPoint.y, point.y)
-        //   .resolve();
-        // console.log(lastPoint.x);
-
-
-        //OLD STUFF
-        // oldShapes[oldShapes.length - 1].p2(point); //update second point of line
-        // this.setState({  //TODO: FACTOR THIS OUT OF ALL CASES?
-        //   shapes: oldShapes,
-        // });
       break;
 
       case "BEZIER":
@@ -541,7 +472,6 @@ class DrawArea extends React.Component {
         //console.log(this.state.isDrawing);
         if (!this.state.isDrawing) {break;};
       case "POLYGON":
-        // oldShapes[oldShapes.length -1].lastPoint(point); //update the last point of the polygon
         var lastLine = oldShapes[oldShapes.length - 1];
         this.solver
           .suggestValue(lastLine.p2_.x, point.x)
@@ -550,22 +480,6 @@ class DrawArea extends React.Component {
         this.setState({});
         break;
       case "FREEHAND":
-        // console.log("old: ", oldState);
-        // var lastLine = oldState[oldState.length - 1];  //this can't be a 'let' declaration because it's defined above
-        //                                               //I thought it wouldn't matter because JavaScript does everything at runtime
-        //                                               //but React seems to have a compile-like phase
-        // lastLine.push(point);
-        //
-        // var temp = oldState.slice(0,oldState.length - 1)
-        // temp.push(lastLine);
-        //
-        // var newState = temp;
-        //
-        // // console.log("new: ", newState)
-        //
-        // this.setState({
-        //     lines: newState,
-        // });
         oldShapes[oldShapes.length - 1].lastPoint(point);
         this.setState({
           shapes: oldShapes,
@@ -874,6 +788,23 @@ class DrawArea extends React.Component {
     //this.setState(loadedFileIntoState[0]);
   }
 
+  updateSVGMouse(event) {
+    this.setState({
+      svgMouse : {x:event.x, y:event.y}
+    })
+    //console.log(this.state.svgMouse);
+  }
+
+  setWorkpieceSize(e) {
+    e.preventDefault();
+    let width = parseInt(document.getElementById('width').value);
+    let height = parseInt(document.getElementById('height').value);
+
+    this.setState({
+      workpieceSize : {x:width, y:height}
+    })
+  }
+
   constraintUpdate() {
     let changed = false;
     this.state.constraints.forEach((constraint) => {
@@ -881,7 +812,6 @@ class DrawArea extends React.Component {
     });
 
     if (changed) {
-
       this.setState({}); //re-render
     }
   }
@@ -968,20 +898,6 @@ class DrawArea extends React.Component {
     }
   }
 
-
-  updateSVGMouse(event) {
-    this.setState({
-      svgMouse : {x:event.x, y:event.y}
-    })
-    //console.log(this.state.svgMouse);
-  }
-
-  setWorkpieceSize() {
-    this.setState({
-      workpieceSize : {x:1000, y:1000}
-    })
-  }
-
   render() {
     this.solver.resolve;
     let pointer = "";
@@ -1021,8 +937,6 @@ class DrawArea extends React.Component {
         pointer = "crosshair";
     }
 
-    // console.log("drawing: ", this.state.isDrawing);
-    // console.log("state: ",this.state.lines);
     let drawAreaStyle = {
       width: "500px",
       height: "500px",
@@ -1096,12 +1010,8 @@ class DrawArea extends React.Component {
       verticalAlign: "middle",
     }
 
-
-    //let's consolidate line and polygon tool to polyline
     //<tr><td><button style={this.state.tool === "LINE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickLine(e)}>Line</button></td></tr>
     let pan = this.state.tool === "PAN" ? true : false;
-
-    //<circle cx="600" cy="600" r="100" fill="#f0f" stroke="#f0f"/>
 
     return (
       <div>
@@ -1122,9 +1032,10 @@ class DrawArea extends React.Component {
             miniaturePosition={"left"}>
 
             <svg width={this.state.workpieceSize.x} height={this.state.workpieceSize.y}>
-              {this.state.shapes.map(shape => shape.svgRender())};
-              {this.state.newShapes.map(shape => shape.svgRender())}
+              {this.state.shapes.map(shape => shape.svgRender(this.state.workpieceSize.x, this.state.workpieceSize.y))};
+              {this.state.newShapes.map(shape => shape.svgRender(this.state.workpieceSize.x, this.state.workpieceSize.y))}
             </svg>
+
 
           </ReactSVGPanZoom>
 
@@ -1170,10 +1081,20 @@ class DrawArea extends React.Component {
               </td>
             </tr>
             <tr><td><b>File</b></td></tr>
-            <tr><td><button style={downloadButtonStyle} onClick={(e) => this.setWorkpieceSize(e)}>Set Workpiece Size</button></td></tr>
+            <tr><td>
+              <form>
+                <div>
+                  <button style={downloadButtonStyle} onClick={(e) => this.setWorkpieceSize(e)}>Set Workpiece Size</button>
+                  <label>width: </label>
+                  <input type="text" id="width" name="width"/>
+                  <label>height: </label>
+                  <input type="text" id="height" name="height"/>
+                </div>
+              </form>
+            </td></tr>
             <tr><td><button style={downloadButtonStyle} onClick={(e) => this.handleDownload(e)}>Download SVG</button></td></tr>
             <tr><td><button style={downloadButtonStyle} onClick={(e) => this.handleSave(e)}>Save</button></td></tr>
-            <tr><td><div style={downloadButtonStyle}>Upload: <input type="file" name="uploadedFile" onChange={(e) => this.handleUpload(e)}/></div></td></tr>
+            <tr><td><div style={downloadButtonStyle}>Upload: <input type="file" name="uploadedFile" onChange={(e) => this.handleUpload(e)}/> </div></td></tr>
             <tr><td><a href="http://fabmodules.org/" target="_blank" style={downloadButtonStyle}>fab modules</a></td></tr>
           </tbody>
         </table>
@@ -1182,17 +1103,9 @@ class DrawArea extends React.Component {
   }
 }
 
-// <form onSubmit={(e) => this.handleUpload(e)}>
-//     <button style={downloadButtonStyle}>Upload</button>
-//     <input type="file" name="uploadedFile" />
-// </form>
 
 class App extends Component {
   render() {
-    // <canvas style={canvasStyle} width="490" height="220">
-    //   {document.write(svg)}
-    // </canvas>
-
     return (
       <div>
         <DrawArea/>
