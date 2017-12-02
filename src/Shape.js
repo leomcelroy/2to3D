@@ -56,7 +56,7 @@ class Line {
   //   if (onLine(point, cPointToPoint(this.p1_), cPointToPoint(this.p2_), this.pointSelectDistance_)) { return this; }
   // }
 
-  selectObjectAt(point) {
+  selectedObjectAt(point) {
     if (distanceSquared(point, cPointToPoint(this.p1_)) < this.pointSelectDistance_**2) {
       if (this.p1_selected) {
         //return a callbcak to be called on mouseup (if mouse was not dragged)
@@ -107,7 +107,7 @@ class Line {
   // }
 
   select(booleanValue) {
-    return this.selected = (!booleanValue) ? !this.selected : booleanValue;
+    return this.selected = (booleanValue === undefined) ? !this.selected : booleanValue;
   }
 
   angle(a) {
@@ -144,11 +144,11 @@ class Line {
       const pathData = "M " + this.toLine().map(p => `${p['x']} ${p['y']}`);
 
       return (
-        <svg>
+        <g>
           <path d={pathData} style={style}/>
           <circle cx={`${this.p1_.x.value}`} cy={`${this.p1_.y.value}`} r="5" fill={circle1Color}/>
           <circle cx={`${this.p2_.x.value}`} cy={`${this.p2_.y.value}`} r="5" fill={circle2Color}/>
-        </svg>
+        </g>
       )
   }
 }
@@ -391,6 +391,10 @@ class Freehand {
 
   //lockDistance(d) { if(d){ this.lockDistance_ = d; return this} return this.lockDistance_};
 
+  toLine() {
+    return this.points_;
+  };
+
   toLines() {
     let lines = []
     for (let i = 0; i < this.points_.length -1; i++) {
@@ -399,34 +403,16 @@ class Freehand {
     return lines;
   };
 
-  select() {
-    return this.selected = !this.selected;
+  select(booleanValue) {
+    return this.selected = (booleanValue === undefined) ? !this.selected : booleanValue;
   }
 
   selectedObjectAt(point) {
-    //try points
-    for (var i=0; i < this.points_.length; i++) {
-      let d1 = distanceSquared(point, this.points_[i]);
-      if (d1 < this.pointSelectDistance_**2) {
-        return this.points_[i];
-      }
-    }
-    //try lines
-    for (var i=0; i < this.points_.length-1; i++) {
-      let d1 = distanceSquared(point, this.points_[i]);
-      let d2 = distanceSquared(point, this.points_[i+1]);
-      if (onLine(point, this.points_[i], this.points_[i+1], this.lineSelectDistance_)) {
-        return new Line(this.points_[i], this.points_[i+1]);
-      }
-    }
-  }
+    let contains = this.toLines()
+                        .map(line => onLine(point,line[0],line[1],this.lineSelectDistance_))
+                        .some(entry => entry===true);
 
-  shapeContains(point) {
-    let polyRawLines = this.toLines();
-    let polyLines = polyRawLines.map(line => new Line(line[0],line[1]))
-    let contained = polyLines.map(line => line.shapeContains(point));
-
-    return contained.some(entry => entry===true);
+    return contains;
   }
 
   rendersPath() {
@@ -447,10 +433,10 @@ class Freehand {
 
     const pathData = "M " + this.points().map(p => `${p['x']} ${p['y']}`);
 
-    return <svg>
+    return <g>
       <path d={pathData} style={style}/>
       {/*this.points().map(p => <circle cx={`${p['x']}`} cy={`${p['y']}`} r="5" fill={'black'}/>)*/}
-    </svg>
+    </g>
   }
 } //end Freehand()
 
@@ -527,10 +513,10 @@ class Bezier {
     const pathData = "M " + this.points()[0]['x'] + " " + this.points()[0]['y'] +
                      " C " + this.points().slice(1).map(p => `${p['x']} ${p['y']}`);
 
-    return <svg>
+    return <g>
       <path d={pathData} style={style}/>
       {this.points().map(p => <circle cx={`${p['x']}`} cy={`${p['y']}`} r="5" fill={'black'}/>)}
-    </svg>
+    </g>
   }
 }
 
@@ -555,6 +541,9 @@ function pointEqual(p1, p2) {
 }
 
 function cPointToPoint(cpoint) {
+  // if (cpoint.x === undefined || cpoint.y === undefined) {
+  //   return {'x': cpoint._x.value, 'y': cpoint._y.value}; //this is for upload for some reason
+  // }
   return {'x': cpoint.x.value, 'y': cpoint.y.value};
 }
 
