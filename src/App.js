@@ -1,170 +1,14 @@
 import React, { Component } from 'react';
 import {Line, Polygon, Bezier, Rectangle, Freehand} from './Shape.js';
 import {CoincidentConstraint, ParallelLineConstraint, PerpendicularLineConstraint, VerticalLineConstraint, HorizontalLineConstraint, angle} from './GeometricConstraintSolver.js';
+import {ReactSVGPanZoom} from 'react-svg-pan-zoom';
+import {AutoSizer} from 'react-virtualized';
 
 var c = require('cassowary');
 
 
+
 const SELECT_DISTANCE = 7;
-
-class DrawingLine extends React.Component {
-
-  render() {
-    let style = {
-      fill: "none",
-      strokeWidth: "1px",
-      stroke: this.props.color,
-      strokeLinejoin: "round",
-      strokeLinecap: "round",
-    }
-    //console.log(this.props.line);
-    const pathData = "M " + this.props.line.map(p => `${p['x']} ${p['y']}`);
-    // console.log(pathData);
-    // console.log(<path d={pathData} style={style}/>);
-    return <path d={pathData} style={style}/>;
-  }
-}
-
-class DrawingPath extends React.Component {
-  render() {
-    let style = {
-      fill: "none",
-      strokeWidth: "1px",
-      stroke: this.props.color,
-      strokeLinejoin: "round",
-      strokeLinecap: "round",
-    }
-    // console.log(this.props.points);
-    const pathData = "M " + this.props.points[0]['x'] + " " + this.props.points[0]['y'] +
-                     " C " + this.props.points.slice(1).map(p => `${p['x']} ${p['y']}`);
-    // console.log(pathData);
-    // console.log(<path d={pathData} style={style}/>);
-    return <path d={pathData} style={style}/>
-  }
-}
-
-
-class Drawing extends React.Component {
-  //TODO: MAYBE REFACTOR SO THAT BEZIERS AND OTHERS ARE DRAWN WITH THE SAME PROCESS
-  render() {
-    let shapeArray = this.props.shapes;
-    let newShapeArray = this.props.newShapes;
-    let lineArray = [];
-    let lineArrayAndColor = [];
-    let lineArrayAndEndpointColor = [];
-    let lineArrayAndType = [];
-    let color = "black";
-    shapeArray.forEach((shape) => {
-      if (!shape.rendersPath()) {
-        if (shape.selected === true) {
-          color = "blue";
-        } else {
-          color = "black";
-        }
-        let type = shape.shape_;
-        let endpointColor = ["black", "black"]
-        if (shape.p1_selected === true) {
-          endpointColor[0] = "blue";
-        }
-        if (shape.p2_selected === true) {
-          endpointColor[1] = "blue";
-        }
-
-        lineArray = lineArray.concat(shape.toLines());
-        lineArrayAndColor = lineArrayAndColor.concat(shape.toLines().map(entry => color));
-        lineArrayAndEndpointColor = lineArrayAndEndpointColor.concat(shape.toLines().map(entry => endpointColor));
-        lineArrayAndType = lineArrayAndType.concat(shape.toLines().map(entry => type));
-      }
-    });
-
-    newShapeArray.forEach((shape) => {
-      if (!shape.rendersPath()) {
-        if (shape.selected === true) {
-          color = "blue";
-        } else {
-          color = "black";
-        }
-        let type = shape.shape_;
-        let endpointColor = ["black", "black"]
-        if (shape.p1_selected === true) {
-          endpointColor[0] = "blue";
-        }
-        if (shape.p2_selected === true) {
-          endpointColor[1] = "blue";
-        }
-
-        lineArray = lineArray.concat(shape.toLines());
-        lineArrayAndColor = lineArrayAndColor.concat(shape.toLines().map(entry => color));
-        lineArrayAndEndpointColor = lineArrayAndEndpointColor.concat(shape.toLines().map(entry => endpointColor));
-        lineArrayAndType = lineArrayAndType.concat(shape.toLines().map(entry => type));
-      }
-    });
-
-    //console.log(lineArrayAndType);
-
-    let pathShapes = shapeArray.filter(shape => shape.rendersPath());
-    // console.log(pathShapes);
-    let pathsDrawing = pathShapes.map((shape, index) => (
-      <DrawingPath key={index} points={shape.toPath()} color={shape.selected ? "blue" : "black"} selected={shape.selected}/>
-    ));
-
-    // lineArray = lineArray.concat(this.props.lines);
-
-    //let freehandColors = this.props.lines.map(line => "black");
-
-    // lineArrayAndColor = lineArrayAndColor.concat(freehandColors);
-
-    // console.log(lineArray);
-    // console.log(lineArrayAndColor);
-
-    let style = {
-      width: "100%",
-      height: "100%",
-    }
-
-    // let freehandDrawing = this.props.lines.map((line, index) => (
-    //       <DrawingLine key={index} line={line} color={freehandColors[index]}/>
-    //     ))
-
-    let drawing = <svg style={style}>
-        {lineArray.map((line, index) => (
-          <DrawingLine key={index} line={line} color={lineArrayAndColor[index]}/>
-        ))}
-        {lineArray.map((line, index) => {
-          if (lineArrayAndType[index] !== "freehand" || lineArrayAndColor[index] === "blue") { //change to freehand to remove points from freehand lines
-            return <circle key={index} cx={`${line[0].x}`} cy={`${line[0].y}`} r="2" fill={lineArrayAndEndpointColor[index][0]}/>
-          } else {
-            return
-          }
-        })}
-        {lineArray.map((line, index) => {
-          if (lineArrayAndType[index] !== "freehand" || lineArrayAndColor[index] === "blue") { //change to freehand to remove points from freehand lines
-            return <circle key={index} cx={`${line[1].x}`} cy={`${line[1].y}`} r="2" fill={lineArrayAndEndpointColor[index][1]}/>
-          } else {
-            return
-          }
-        })}
-        {/*freehandDrawing*/}
-        {pathsDrawing}
-        {pathShapes.map(shape => shape.toPath().map(point => {
-          if (shape.selected || !shape.selected) { //TODO: bad style just want it to display for testing purposes
-            return <circle cx={`${point.x}`} cy={`${point.y}`} r="2" fill={"blue"}/>
-          }
-        }))}
-
-      </svg>
-
-    let drawing2 = <svg style={style}>
-          {this.props.shapes.map(shape => shape.svgRender())}
-          {this.props.newShapes.map(shape => shape.svgRender())}
-        </svg>
-
-    return (
-      drawing2
-    )
-  }
-}
-
 
 class DrawArea extends React.Component {
   constructor() {
@@ -186,6 +30,8 @@ class DrawArea extends React.Component {
       dragStart: undefined,
       onDragEndCallbacks: [],
       mouseDragged: false,
+      svgMouse: undefined,
+      workpieceSize: {x:500, y:500},
 
       solverPoints: [], //holds array of c.Point objects
       //file: undefined,
@@ -382,8 +228,6 @@ class DrawArea extends React.Component {
           });
         }
         break;
-      case "EDIT": //need to be able to select points and lines
-        break;
       case "SELECT":
         //click and drag
         let anySelected = false;
@@ -430,12 +274,12 @@ class DrawArea extends React.Component {
 
         // let selectedPoints = this.state.
         break;
-      case "PAN":
       case "MOVE":
         var point = this.relativeCoordinatesForEvent(mouseEvent);
         let originalShapes = [];
         this.state.shapes.forEach(shape => {
-          let newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
+          let newShape = new Line({x:0,y:0},this.solver)
+          newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
           originalShapes.push(newShape);
           // switch (shape.shape_) {   //different shapes can be added here
           //   case "freehand":
@@ -480,98 +324,6 @@ class DrawArea extends React.Component {
 
         this.setState({pivotPoint:pivotPoint, originalShapes:originalShapes, originalPoint:originalPoint});
         break;
-      case "ZOOMIN":
-      case "ZOOMOUT":
-        // originalShapes = [];
-        // points = [];
-        //
-        // this.state.shapes.forEach(shape => {
-        //   let newShape = undefined;
-        //   switch (shape.shape_) {   //different shapes can be added here
-        //     case "freehand":
-        //     case "polygon":
-        //       newShape = new Polygon;
-        //       break;
-        //     case "rectangle":
-        //       newShape = new Rectangle;
-        //       break;
-        //     case "line":
-        //       console.log(shape);
-        //       newShape = new Line;
-        //       break;
-        //   }
-        //
-        //   //points = (shape.shape_ === "line") ? points.concat(shape.points()) : points.concat(shape.points());
-        //   points = points.concat(shape.points());
-        //
-        //   newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
-        //   originalShapes.push(newShape);
-        // })
-        //
-        // averageX = points.length > 1 ? points.reduce(functionAverageX) : undefined;
-        // averageY = points.length > 1 ? points.reduce(functionAverageY) : undefined;
-        //
-        // pivotPoint = {x:320, y:240} //320 and 240 is center for now, could use object centers {x:averageX, y:averageY}
-        // //console.log("pivot point",pivotPoint);
-        //
-        // let newShapes = [];
-        // var pivot = pivotPoint;
-        //
-        // let factor = undefined;
-        //
-        // if (this.state.tool === "ZOOMOUT") {
-        //   factor = .9;
-        // } else if (this.state.tool === "ZOOMIN") {
-        //   factor = 1.1;
-        // }
-        //
-        // // console.log("scale factor",factor);
-        // //
-        // // console.log(originalShapes);
-        //
-        // if (originalShapes.length > 0) {
-        //   originalShapes.forEach((shape) => {
-        //
-        //     const functionScale = (factor, shape) => {
-        //       let newShape = undefined;
-        //       switch (shape.shape_) {   //different shapes can be added here
-        //         case "freehand":
-        //         case "polygon":
-        //           newShape = new Polygon;
-        //           break;
-        //         case "rectangle":
-        //           newShape = new Rectangle;
-        //           break;
-        //         case "line":
-        //           newShape = new Line;
-        //           break;
-        //       }
-        //
-        //       newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
-        //
-        //       let newPoints = newShape.points().map(shapePoint => { //TODO: fix for line
-        //         //console.log(pivot);
-        //         let angle = this.functionGetAngle(shapePoint, pivot) + Math.PI;
-        //         let dist = this.distance(shapePoint, pivot);
-        //         let newPoint = {x:pivot.x+Math.cos(angle)*factor*dist, y:pivot.y+Math.sin(angle)*factor*dist};
-        //         return newPoint;
-        //       })
-        //
-        //         newShape.points(newPoints);
-        //
-        //         return newShape;
-        //       }
-        //
-        //     let newShape = functionScale(factor, shape);
-        //
-        //     newShapes.push(newShape);
-        //
-        //   });
-        // };
-        //
-        // this.setState({newShapes: newShapes});
-
-        break;
       default:
         return;
     }
@@ -587,11 +339,14 @@ class DrawArea extends React.Component {
   }
 
   relativeCoordinatesForEvent(mouseEvent) {
-    const boundingRect = this.refs.drawArea.getBoundingClientRect();
-    return {
-      x: mouseEvent.clientX - boundingRect.left,
-      y: mouseEvent.clientY - boundingRect.top,
-    };
+    //const boundingRect = this.refs.drawArea.getBoundingClientRect();
+    //console.log(mouseEvent.point);
+    // return {
+    //   x: mouseEvent.clientX - boundingRect.left,
+    //   y: mouseEvent.clientY - boundingRect.top,
+    // };
+
+    return (this.state.svgMouse);
   }
 
   isPointOrArrayOfPoints(shape) {
@@ -607,7 +362,8 @@ class DrawArea extends React.Component {
 
   handleMouseMove(mouseEvent) {
     //console.log("mouse move");
-    this.constraintUpdate(); //TODO: MOVE THIS?
+
+    //console.log(this.state.svgMouse)
 
     var point = this.relativeCoordinatesForEvent(mouseEvent);
     if (!this.state.isDrawing) {
@@ -619,7 +375,7 @@ class DrawArea extends React.Component {
             let dx = point.x - this.state.dragStart.x;
             let dy = point.y - this.state.dragStart.y;
 
-            console.log('selectedPoints: ', this.state.selectedPoints);
+            //console.log('selectedPoints: ', this.state.selectedPoints);
             this.state.selectedPoints.forEach(sPoint => {
               // console.log(sPoint);
               // console.log(this.solver._editVarList);
@@ -635,9 +391,6 @@ class DrawArea extends React.Component {
           }
 
         break;
-        case "EDIT": //TODO: change this to use coincident constraint with pointer
-          break;
-        case "PAN":
         case "MOVE":
           if (this.state.mousedown === true) {
             var point = this.relativeCoordinatesForEvent(mouseEvent);
@@ -654,41 +407,9 @@ class DrawArea extends React.Component {
                 newShapes.push(newShape);
 
               }
-            // this.state.originalShapes.forEach((shape) => {
-            //   if (this.state.tool === "PAN" || shape.selected) {
-            //     let newShape = undefined;
-            //     switch (shape.shape_) {   //different shapes can be added here
-            //       case "freehand":
-            //       case "polygon":
-            //         newShape = new Polygon;
-            //         break;
-            //       case "rectangle":
-            //         newShape = new Rectangle;
-            //         break;
-            //       case "line":
-            //         newShape = new Line({x:undefined,y:undefined}, this.solver);
-            //         break;
-            //     }
-            //
-            //     newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
-            //     let newPoints = newShape.toLine().map(shapePoint => {
-            //       //console.log(point.x-this.state.pivotPoint.x, point.y-this.state.pivotPoint.y)
-            //       return ({x:shapePoint.x+(point.x-this.state.pivotPoint.x), y:shapePoint.y+(point.y-this.state.pivotPoint.y)}) //denomiator sets speed of movement
-            //     });
-            //     //console.log(newPoints);
-            //     newShape.pointsToCPoints(newPoints, this.solver);
-            //     newShapes.push(newShape);
-            //   }
             });
 
-            if (this.state.tool === "PAN") {
-              this.setState({shapes: newShapes, newShapes:[]});
-              break;
-            } else if (this.state.tool === "MOVE") {
-              this.setState({newShapes: newShapes});
-            }
-
-            //console.log(newShapes)
+            this.setState({newShapes: newShapes});
           }
           break;
         case "ROTATE":
@@ -811,6 +532,11 @@ class DrawArea extends React.Component {
       break;
 
       case "BEZIER":
+        oldShapes[oldShapes.length -1].lastPoint(point); //update the last point of the polygon
+        this.setState({
+          shapes: oldShapes,
+        });
+        break;
       case "RECTANGLE":
         //console.log(this.state.isDrawing);
         if (!this.state.isDrawing) {break;};
@@ -851,68 +577,54 @@ class DrawArea extends React.Component {
   }
 
   handleMouseUp(mouseEvent) {
-    let inCanvas = mouseEvent.srcElement ? mouseEvent.srcElement.localName : false;
-    let inCanvasBoolean = inCanvas === "svg";
     let oldShapes = this.state.shapes;
-    // console.log("mouse up");
-    // console.log(inCanvasBoolean);
 
     this.setState({
       mousedown: false,
     })
 
-    if (inCanvasBoolean || this.state.tool === "POLYGON" || this.state.tool === "RECTANGLE" || this.state.tool === "FREEHAND" || this.state.tool === "SELECT") { //this is a hack not sure why it is neccesary
-      //console.log(this.state.tool);
-      switch (this.state.tool) {
-        case "FREEHAND":
-          this.setState({ isDrawing: false });
-          break;
-        case "SELECT":
-          //console.log("ender");
-          this.solver.endEdit();
-          console.log("dragged", this.state.mouseDragged);
-          if (!this.state.mouseDragged) {
-              this.state.onDragEndCallbacks.forEach(callback => callback());
+    switch (this.state.tool) {
+      case "FREEHAND":
+        this.setState({ isDrawing: false });
+        break;
+      case "SELECT":
+        //console.log("ender");
+        this.solver.endEdit();
+        //console.log("dragged", this.state.mouseDragged);
+        if (!this.state.mouseDragged) {
+            this.state.onDragEndCallbacks.forEach(callback => callback());
+        }
+        this.setState({
+          mouseDragged: false,
+          onDragEndCallbacks: [],
+        });
+        break;
+      case "POLYGON": //close polygon using constraints
+        break;
+      case "LINE":
+        //do nothing
+        break;
+      case "RECTANGLE":
+        //console.log("mouse going up");
+        this.setState({ isDrawing: false });
+        break;
+      case "ROTATE": // fall-through, or statement doesn't work
+      case "SCALE":
+      case "MOVE":
+        let unselectedShapes = [];
+        this.state.shapes.forEach(shape => {
+          if (shape.selected === false) {
+            unselectedShapes.push(shape);
           }
-          this.setState({
-            mouseDragged: false,
-            onDragEndCallbacks: [],
-          });
-          break;
-        case "EDIT":
-          //console.log(this.state.selected);
-          break;
-        case "POLYGON": //close polygon using constraints
-          break;
-        case "LINE":
-          //do nothing
-          break;
-        case "RECTANGLE":
-          //console.log("mouse going up");
-          this.setState({ isDrawing: false });
-          break;
-        case "ROTATE": // fall-through, or statement doesn't work
-        case "SCALE":
-        case "MOVE":
-          let unselectedShapes = [];
-          this.state.shapes.forEach(shape => {
-            if (shape.selected === false) {
-              unselectedShapes.push(shape);
-            }
-          })
-          let allShapes = this.state.newShapes.concat(unselectedShapes);
-          this.setState( {shapes: allShapes} );
-          break;
-        case "PAN":
-          //console.log(this.state.shapes);
-          break;
-        case "ZOOMOUT":
-        case "ZOOMIN":
-          this.setState( {shapes: this.state.newShapes} );
-          break
-        default:
-          return;
-      }
+        })
+        let allShapes = this.state.newShapes.concat(unselectedShapes);
+
+        this.setState( {
+          shapes: allShapes
+        });
+        break;
+      default:
+        return;
     }
   }
 
@@ -940,9 +652,9 @@ class DrawArea extends React.Component {
     let lines = this.state.selectedLines;
     let l = lines.length;
 
-    console.log("selected", selected);
-    console.log("lines", lines);
-    console.log("points", sPoints);
+    // console.log("selected", selected);
+    // console.log("lines", lines);
+    // console.log("points", sPoints);
 
     if (p >= 2) {
       let c = CoincidentConstraint(sPoints[p-1], sPoints[p-2]);
@@ -966,6 +678,7 @@ class DrawArea extends React.Component {
 
 
     if (pl === 2) {
+      //console.log("coincident!")
       var eq = new c.Equation(points[pl-1].x, new c.Expression(points[0].x));
       var eq2 = new c.Equation(points[pl-1].y, new c.Expression(points[0].y));
 
@@ -1043,8 +756,8 @@ class DrawArea extends React.Component {
     let svgString = lineArray.map(line => `<path d="M ${line.map(p => `${p['x']} ${p['y']}`)}" stroke-linejoin="round" stroke-linecap="round" stroke-width="1px" stroke="black" fill="none"/>`);
 
     let text = `<svg
-      width="640"
-      height="480"
+      width="${this.state.workpieceSize.x}"
+      height="${this.state.workpieceSize.y}"
       xmlns="http://www.w3.org/2000/svg"
       xmlns:svg="http://www.w3.org/2000/svg">
       ${svgString.join("")}
@@ -1101,10 +814,13 @@ class DrawArea extends React.Component {
         let oldShapes = oldState.shapes;
 
         let newShapes = oldShapes.map(oldShape => {
-          //console.log(oldShape.shape_);
+          console.log(oldShape.shape_);
           let newShape = undefined;
 
           switch (oldShape.shape_) {   //different shapes can be added here
+            case "line":
+              newShape = new Line({x:0,y:0}, this.solver);
+              break;
             case "freehand":
             case "polygon":
               newShape = new Polygon;
@@ -1252,6 +968,20 @@ class DrawArea extends React.Component {
     }
   }
 
+
+  updateSVGMouse(event) {
+    this.setState({
+      svgMouse : {x:event.x, y:event.y}
+    })
+    //console.log(this.state.svgMouse);
+  }
+
+  setWorkpieceSize() {
+    this.setState({
+      workpieceSize : {x:1000, y:1000}
+    })
+  }
+
   render() {
     this.solver.resolve;
     let pointer = "";
@@ -1369,6 +1099,9 @@ class DrawArea extends React.Component {
 
     //let's consolidate line and polygon tool to polyline
     //<tr><td><button style={this.state.tool === "LINE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickLine(e)}>Line</button></td></tr>
+    let pan = this.state.tool === "PAN" ? true : false;
+
+    //<circle cx="600" cy="600" r="100" fill="#f0f" stroke="#f0f"/>
 
     return (
       <div>
@@ -1381,8 +1114,20 @@ class DrawArea extends React.Component {
           onKeyDown={(e) => this.handleKeyPress(e)}
           tabIndex="0"
         >
-          <Drawing shapes={this.state.shapes}
-                   newShapes={this.state.newShapes}/>
+          <ReactSVGPanZoom
+            width={500} height={500}
+            onMouseMove={event => this.updateSVGMouse(event)}
+            toolbarPosition={"none"}
+            tool={pan ? "pan" : "none"}
+            miniaturePosition={"left"}>
+
+            <svg width={this.state.workpieceSize.x} height={this.state.workpieceSize.y}>
+              {this.state.shapes.map(shape => shape.svgRender())};
+              {this.state.newShapes.map(shape => shape.svgRender())}
+            </svg>
+
+          </ReactSVGPanZoom>
+
         </div>
 
         <table style={{float:"left"}}>
@@ -1393,16 +1138,14 @@ class DrawArea extends React.Component {
             <tr><td><button style={this.state.tool === "RECTANGLE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("RECTANGLE")}>Rectangle</button></td></tr>
             <tr><td><button style={this.state.tool === "POLYGON" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("POLYGON")}>Polygon</button></td></tr>
             <tr><td><button style={this.state.tool === "BEZIER" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("BEZIER")}>Bezier</button></td></tr>
-            <tr><td><button style={this.state.tool === "EDIT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("EDIT")}>Edit</button></td></tr>
             <tr><td><button style={this.state.tool === "SELECT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SELECT")}>Select</button></td></tr>
             <tr><td>Direct Transform</td></tr>
             <tr><td><button style={this.state.tool === "MOVE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("MOVE")}>Move</button></td></tr>
             <tr><td><button style={this.state.tool === "ROTATE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ROTATE")}>Rotate</button></td></tr>
             <tr><td><button style={this.state.tool === "SCALE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SCALE")}>Scale</button></td></tr>
             <tr><td>View Tools</td></tr>
-            <tr><td><button style={this.state.tool === "ZOOMIN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMIN")}>Zoom In</button></td></tr>
-            <tr><td><button style={this.state.tool === "ZOOMOUT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMOUT")}>Zoom Out</button></td></tr>
             <tr><td><button style={this.state.tool === "PAN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("PAN")}>Pan</button></td></tr>
+            <tr><td></td></tr>
             <tr><td>Other</td></tr>
             <tr><td><button style={this.state.tool === undefined ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickNoTool(e)}>No Tool</button></td></tr>
             <tr><td><b>Constraints</b></td></tr>
@@ -1427,6 +1170,7 @@ class DrawArea extends React.Component {
               </td>
             </tr>
             <tr><td><b>File</b></td></tr>
+            <tr><td><button style={downloadButtonStyle} onClick={(e) => this.setWorkpieceSize(e)}>Set Workpiece Size</button></td></tr>
             <tr><td><button style={downloadButtonStyle} onClick={(e) => this.handleDownload(e)}>Download SVG</button></td></tr>
             <tr><td><button style={downloadButtonStyle} onClick={(e) => this.handleSave(e)}>Save</button></td></tr>
             <tr><td><div style={downloadButtonStyle}>Upload: <input type="file" name="uploadedFile" onChange={(e) => this.handleUpload(e)}/></div></td></tr>
