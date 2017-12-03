@@ -569,7 +569,7 @@ class DrawArea extends React.Component {
   }
 
   mouseDraggedToPoint(point) {
-    //turn off all parallel constraints
+    //turn off all parallel and perpindicular constraints
     // console.log(this.state.parallelConstraints);
     this.state.parallelConstraints.forEach(constraint => {
       try {
@@ -596,7 +596,7 @@ class DrawArea extends React.Component {
       mouseDragged: true,
     });
 
-    //update parallel constraints
+    //update parallel and perpindicular constraints
     let updateTheseConstraints = [];
     this.state.selectedPoints.forEach(sPoint => {
       let containingParallelConstraints = this.findContainingParallelConstraints(sPoint);
@@ -857,14 +857,14 @@ class DrawArea extends React.Component {
       console.log(ratio, invratio);
       if (Math.abs(ratio) < Math.abs(invratio)) {
         isInverse = false;
-        constr1 = this.makeAngleConstraint(line1, 1, false);
-        constr2 = this.makeAngleConstraint(line2, 1, false);
+        constr1 = this.makeAngleConstraint(line1, ratio, false);
+        constr2 = this.makeAngleConstraint(line2, ratio, false);
         this.solver.addConstraint(constr1);
         this.solver.addConstraint(constr2);
       } else {
         isInverse = true;
-        constr1 = this.makeAngleConstraint(line1, 1, true);
-        constr2 = this.makeAngleConstraint(line2, 1, true);
+        constr1 = this.makeAngleConstraint(line1, invratio, true);
+        constr2 = this.makeAngleConstraint(line2, invratio, true);
         this.solver.addConstraint(constr1);
         this.solver.addConstraint(constr2);
       }
