@@ -61,7 +61,7 @@ class DrawArea extends React.Component {
       dragStart: undefined,
       onDragEndCallbacks: [],
       mouseDragged: false,
-      parallelConstraints: [],
+      interLineConstraints: [],
       svgMouse: undefined,
       workpieceSize: {x:500, y:500},
       clipboard: [],
@@ -280,8 +280,6 @@ class DrawArea extends React.Component {
           selectedPoints: selectedPoints,
           dragStart: point,
         });
-
-        console.log('selected Points:', this.state.selectedPoints);
 
         // let selectedPoints = this.state.
         break;
@@ -529,7 +527,9 @@ class DrawArea extends React.Component {
         break;
       case "SELECT":
         //console.log("ender");
-        this.solver.endEdit();
+        if(this.solver._editVarMap.size > 0) {
+          this.solver.endEdit();
+        }
         //console.log("dragged", this.state.mouseDragged);
         if (!this.state.mouseDragged) {
             this.state.onDragEndCallbacks.forEach(callback => callback());
@@ -567,9 +567,9 @@ class DrawArea extends React.Component {
   }
 
   mouseDraggedToPoint(point) {
-    //turn off all parallel constraints
-    // console.log(this.state.parallelConstraints);
-    this.state.parallelConstraints.forEach(constraint => {
+    //turn off all parallel and perpindicular constraints
+    // console.log(this.state.interLineConstraints);
+    this.state.interLineConstraints.forEach(constraint => {
       try {
         this.solver.removeConstraint(constraint.constr1);
         this.solver.removeConstraint(constraint.constr2);
@@ -594,23 +594,22 @@ class DrawArea extends React.Component {
       mouseDragged: true,
     });
 
-    //update parallel constraints
+    //update parallel and perpindicular constraints
     let updateTheseConstraints = [];
     this.state.selectedPoints.forEach(sPoint => {
-      let containingParallelConstraints = this.findContainingParallelConstraints(sPoint);
+      let containingInterLineConstraints = this.findContainingInterLineConstraints(sPoint);
 
-      containingParallelConstraints.forEach(constraint => {
+      containingInterLineConstraints.forEach(constraint => {
         this.updateConstraint(constraint, sPoint);
       });
 
-      updateTheseConstraints = updateTheseConstraints.concat(containingParallelConstraints);
+      updateTheseConstraints = updateTheseConstraints.concat(containingInterLineConstraints);
 
     });
 
 
-    //re-add constraints (only unique constraints)
-    updateTheseConstraints = updateTheseConstraints.filter((value, index, arr) => arr.indexOf(value) === index);
-    updateTheseConstraints.forEach(constraint => {
+    //re-add constraints
+    this.state.interLineConstraints.forEach(constraint => {
       this.solver.addConstraint(constraint.constr1);
       this.solver.addConstraint(constraint.constr2);
     });
@@ -621,9 +620,9 @@ class DrawArea extends React.Component {
     this.setState({});
   }
 
-  findContainingParallelConstraints(point) {
+  findContainingInterLineConstraints(point) {
     let constraints = [];
-    this.state.parallelConstraints.forEach(constraint => {
+    this.state.interLineConstraints.forEach(constraint => {
       if (constraint.line1.p1_ === point ||
           constraint.line1.p2_ === point ||
           constraint.line2.p1_ === point ||
@@ -648,22 +647,33 @@ class DrawArea extends React.Component {
   }
 
   updateConstraint(constraint, point) {
+    //note: for perpindicular constraints, we must make sure the edited line becomes constraint.line1
     var line, isInverse, constr1, constr2;
     if (constraint.line1.p1_ === point || constraint.line1.p2_ === point) {
       line = constraint.line1;
     } else {
       line = constraint.line2;
+      constraint.line2 = constraint.line1;
+      constraint.line1 = line;
     }
     let ratio = (line.p2_.y.value - line.p1_.y.value) / (line.p2_.x.value - line.p1_.x.value);
     let invratio = (line.p2_.x.value - line.p1_.x.value) / (line.p2_.y.value - line.p1_.y.value);
     if (Math.abs(ratio) < Math.abs(invratio)) {
       isInverse = false;
       constr1 = this.makeAngleConstraint(constraint.line1, ratio, false);
-      constr2 = this.makeAngleConstraint(constraint.line2, ratio, false);
+      if (constraint.type === 'par') {
+        constr2 = this.makeAngleConstraint(constraint.line2, ratio, false);
+      } else {
+        constr2 = this.makeAngleConstraint(constraint.line2, -ratio, true);
+      }
     } else {
       isInverse = true;
       constr1 = this.makeAngleConstraint(constraint.line1, invratio, true);
-      constr2 = this.makeAngleConstraint(constraint.line2, invratio, true);
+      if (constraint.type === 'par') {
+        constr2 = this.makeAngleConstraint(constraint.line2, invratio, true);
+      } else {
+        constr2 = this.makeAngleConstraint(constraint.line2, -invratio, false);
+      }
     }
     constraint.constr1 = constr1;
     constraint.constr2 = constr2;
@@ -837,8 +847,18 @@ class DrawArea extends React.Component {
     this.setState({});
   }
 
-
   makeParallel() {
+    this.makeInterLineConstraint('par');
+  }
+
+  makePerpendicular() {
+    this.makeInterLineConstraint('perp');
+  }
+
+  makeInterLineConstraint(type) {
+    if (!(type === 'par' || type === 'perp')) {
+      return;
+    }
     let selectedLines = [];
     this.state.shapes.forEach(shape => {
       if (shape.shape_ === 'line' && shape.selected) {
@@ -854,31 +874,39 @@ class DrawArea extends React.Component {
       console.log(ratio, invratio);
       if (Math.abs(ratio) < Math.abs(invratio)) {
         isInverse = false;
-        constr1 = this.makeAngleConstraint(line1, 1, false);
-        constr2 = this.makeAngleConstraint(line2, 1, false);
+        constr1 = this.makeAngleConstraint(line1, ratio, false);
+        if (type === 'par') {
+          constr2 = this.makeAngleConstraint(line2, ratio, false);
+        } else {
+          constr2 = this.makeAngleConstraint(line2, -ratio, true);
+        }
         this.solver.addConstraint(constr1);
         this.solver.addConstraint(constr2);
       } else {
         isInverse = true;
-        constr1 = this.makeAngleConstraint(line1, 1, true);
-        constr2 = this.makeAngleConstraint(line2, 1, true);
+        constr1 = this.makeAngleConstraint(line1, invratio, true);
+        if (type === 'par') {
+          constr2 = this.makeAngleConstraint(line2, invratio, true);
+        } else {
+          constr2 = this.makeAngleConstraint(line2, -invratio, false);
+        }
         this.solver.addConstraint(constr1);
         this.solver.addConstraint(constr2);
       }
-
-      let parConstrObj = {line1, line2, constr1, constr2, isInverse};
-      let oldConstraints = this.state.parallelConstraints;
+      let parConstrObj = {line1, line2, constr1, constr2, isInverse, type};
+      let oldConstraints = this.state.interLineConstraints;
       oldConstraints.push(parConstrObj);
       //re-render
-      this.setState({parallelConstraints: oldConstraints});
+      this.setState({interLineConstraints: oldConstraints});
 
 
     }
 
   }
 
-  makeAngleConstraint(line, ratio, inverse) { //TODO: MAKE THIS WORK FOR VERTICAL LINES
 
+
+  makeAngleConstraint(line, ratio, inverse) { //TODO: MAKE THIS WORK FOR VERTICAL LINES
     if (inverse) {
       var exp1 = new c.Expression(line.p1_.y).times(ratio);
       var exp2 = new c.Expression(line.p2_.y).times(ratio);
@@ -891,43 +919,6 @@ class DrawArea extends React.Component {
     return eq;
   }
 
-  // makePerpendicular() {
-  //   let selectedLines = [];
-  //   this.state.shapes.forEach(shape => {
-  //     if (shape.shape_ === 'line' && shape.selected) {
-  //       selectedLines.push(shape);
-  //     }
-  //   });
-  //   if (selectedLines.length === 2) { //TODO: expand to more lines?
-  //     let line1 = selectedLines[0];
-  //     let line2 = selectedLines[1];
-  //     let ratio = (line1.p2_.y.value - line1.p1_.y.value) / (line1.p2_.x.value - line1.p1_.x.value);
-  //     let invratio = (line1.p2_.x.value - line1.p1_.x.value) / (line1.p2_.y.value - line1.p1_.y.value);
-  //     var isInverse, constr1, constr2;
-  //     console.log(ratio, invratio);
-  //     if (Math.abs(ratio) < Math.abs(invratio)) {
-  //       isInverse = false;
-  //       constr1 = this.makeAngleConstraint(line1, -1/invratio, false);
-  //       constr2 = this.makeAngleConstraint(line2, invratio, false);
-  //       this.solver.addConstraint(constr1);
-  //       this.solver.addConstraint(constr2);
-  //     } else {
-  //       isInverse = true;
-  //       constr1 = this.makeAngleConstraint(line1, -1/ratio, true);
-  //       constr2 = this.makeAngleConstraint(line2, ratio, true);
-  //       this.solver.addConstraint(constr1);
-  //       this.solver.addConstraint(constr2);
-  //     }
-  //
-  //     let parConstrObj = {line1, line2, constr1, constr2, isInverse};
-  //     let oldConstraints = this.state.perpendicularConstraints;
-  //     oldConstraints.push(parConstrObj);
-  //     //re-render
-  //     this.setState({perpendicularConstraints: oldConstraints});
-  //
-  //
-  //   }
-  // }
 
 //------------------------component mount functions------------------------
   componentDidMount() {
@@ -1525,7 +1516,7 @@ class DrawArea extends React.Component {
             <tr>
               <td>
                 <button style={defaultButtonStyle} onClick={(e) => this.makeParallel(e)}>Parallel</button>
-                <button style={defaultButtonStyle} onClick={(e) => this.makePerpendicular(e)}>TODO: Perpendicular</button>
+                <button style={defaultButtonStyle} onClick={(e) => this.makePerpendicular(e)}>Perpendicular</button>
                 <button style={defaultButtonStyle} onClick={(e) => this.makeFixed(e)}>Fixed</button>
               </td>
             </tr>
