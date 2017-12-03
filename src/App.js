@@ -1451,8 +1451,7 @@ class DrawArea extends React.Component {
         onKeyDown={(e) => this.handleKeyPress(e)}
         tabIndex="0"
         style={{
-          border: "none",
-          margin:"auto",
+          outline: "none",
         }}
       >
         <div
@@ -1550,7 +1549,7 @@ class DrawArea extends React.Component {
                 </div>
               </form>
             </td></tr>
-            <tr><td><div style={downloadButtonStyle}>Upload: <input type="file" name="uploadedFile" onChange={(e) => this.handleUpload(e)}/> </div></td></tr>
+            <tr><td><div style={downloadButtonStyle}>TODO: Upload: <input type="file" name="uploadedFile" onChange={(e) => this.handleUpload(e)}/> </div></td></tr>
             <tr><td><a href="http://fabmodules.org/" target="_blank" style={downloadButtonStyle}>fab modules</a></td></tr>
           </tbody>
         </table>
