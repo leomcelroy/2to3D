@@ -961,6 +961,14 @@ class DrawArea extends React.Component {
     let oldShapes = this.state.shapes;
     let copied = this.state.clipboard;
 
+    oldShapes.forEach(shape => {
+      if (shape.shape_ === "line") {
+        shape.deselect();
+      } else {
+        shape.select(false);
+      }
+    })
+
     copied.forEach((shape) => {
 
       let newPoints = shape.toLine().map(shapePoint => {

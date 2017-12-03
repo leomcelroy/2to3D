@@ -218,7 +218,7 @@ class Freehand {
 
     let style = {
       fill: "none",
-      strokeWidth: "2px",
+      strokeWidth: "3px",
       stroke: lineColor,
       strokeLinejoin: "round",
       strokeLinecap: "round",
