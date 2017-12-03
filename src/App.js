@@ -5,6 +5,42 @@ import {ReactSVGPanZoom} from 'react-svg-pan-zoom';
 
 var c = require('cassowary');
 
+//----------helper functions----------
+const functionAverageX = (total, amount, index, array) => {
+  if (index === 1) {
+    total = total.x;
+  }
+  total += amount.x;
+  if( index === array.length-1 ) {
+    return total/array.length;
+  }else {
+    return total;
+  }
+};
+
+const functionAverageY = (total, amount, index, array) => {
+  if (index === 1) {
+    total = total.y;
+  }
+  total += amount.y;
+  if( index === array.length-1 ) {
+    return total/array.length;
+  }else {
+    return total;
+  }
+};
+
+const distanceSquared = (p1, p2) => {
+  return (p1.x - p2.x)**2 + (p1.y - p2.y)**2;
+}
+
+const distance = (p1, p2) => {
+  return Math.sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2);
+}
+
+const functionGetAngle = (p1, p2) => {return Math.atan2(p2.y - p1.y, p2.x - p1.x);}
+//----------end of helper functions----------
+
 class DrawArea extends React.Component {
   constructor() {
     super();
@@ -42,36 +78,8 @@ class DrawArea extends React.Component {
     //this.handleKeyPress = this.handleKeyPress.bind(this);
   }
 
-
-
   handleMouseDown(mouseEvent) {
     //console.log("mouse down");
-
-    //helper functions
-    let functionAverageX = (total, amount, index, array) => {
-      if (index === 1) {
-        total = total.x;
-      }
-      total += amount.x;
-      if( index === array.length-1 ) {
-        return total/array.length;
-      }else {
-        return total;
-      }
-    };
-
-    let functionAverageY = (total, amount, index, array) => {
-      if (index === 1) {
-        total = total.y;
-      }
-      total += amount.y;
-      if( index === array.length-1 ) {
-        return total/array.length;
-      }else {
-        return total;
-      }
-    };
-    //end of helper functions
 
     this.setState({
       mousedown: true,
@@ -250,7 +258,7 @@ class DrawArea extends React.Component {
               }
             }
           });
-        } else {
+        } else { //TODO: if dragged should create select box
           this.state.shapes.forEach(shape => {
             if (shape.shape_ === 'line') {
               shape.deselect();
@@ -317,14 +325,6 @@ class DrawArea extends React.Component {
 
   }
 
-  distanceSquared(p1, p2) {
-    return (p1.x - p2.x)**2 + (p1.y - p2.y)**2;
-  }
-
-  distance(p1, p2) {
-    return Math.sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2);
-  }
-
   relativeCoordinatesForEvent(mouseEvent) {
     //const boundingRect = this.refs.drawArea.getBoundingClientRect();
     //console.log(mouseEvent.point);
@@ -335,8 +335,6 @@ class DrawArea extends React.Component {
 
     return (this.state.svgMouse);
   }
-
-  functionGetAngle(p1, p2) {return Math.atan2(p2.y - p1.y, p2.x - p1.x);}
 
   handleMouseMove(mouseEvent) {
     //console.log("mouse move");
@@ -388,8 +386,8 @@ class DrawArea extends React.Component {
 
             let newPoints = newShape.toLine().map(shapePoint => { //TODO: fix for lines to points()
 
-              let distanceToPivot = this.distance(shapePoint, pivot);
-              let angleWithPivot = this.functionGetAngle(shapePoint, pivot);
+              let distanceToPivot = distance(shapePoint, pivot);
+              let angleWithPivot = functionGetAngle(shapePoint, pivot);
               let delta = angleWithPivot + angle + Math.PI;
 
               let newPoint = {x:pivot.x+Math.cos(delta)*distanceToPivot, y:pivot.y+Math.sin(delta)*distanceToPivot};
@@ -414,8 +412,8 @@ class DrawArea extends React.Component {
             var point = this.relativeCoordinatesForEvent(mouseEvent);
             let ogPoint = this.state.originalPoint;
             let pivot = this.state.pivotPoint;
-            let ogAngle = this.functionGetAngle(ogPoint, pivot);
-            let newAngle = this.functionGetAngle(point, pivot);
+            let ogAngle = functionGetAngle(ogPoint, pivot);
+            let newAngle = functionGetAngle(point, pivot);
             //console.log(newAngle - ogAngle);
 
             //functionRotate(newAngle - ogAngle, pivot, this.state.originalShapes[0]);
@@ -439,7 +437,7 @@ class DrawArea extends React.Component {
             let ogPoint = this.state.originalPoint;
             var pivot = this.state.pivotPoint;
 
-            let factor = this.distance(point, pivot)/this.distance(ogPoint, pivot); // if point is inside shape factor should be less than 1
+            let factor = distance(point, pivot)/distance(ogPoint, pivot); // if point is inside shape factor should be less than 1
 
             //console.log("scale factor",factor);
 
@@ -450,8 +448,8 @@ class DrawArea extends React.Component {
                   let newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
 
                   let newPoints = newShape.toLine().map(shapePoint => {
-                    let angle = this.functionGetAngle(shapePoint, pivot) + Math.PI;
-                    let dist = this.distance(shapePoint, pivot);
+                    let angle = functionGetAngle(shapePoint, pivot) + Math.PI;
+                    let dist = distance(shapePoint, pivot);
                     let newPoint = {x:pivot.x+Math.cos(angle)*factor*dist, y:pivot.y+Math.sin(angle)*factor*dist};
                     return newPoint;
                   })
@@ -719,28 +717,27 @@ class DrawArea extends React.Component {
   makeCoincident() { //assumes selected is a point
     let points = this.state.selectedPoints;
     let pl = points.length;
+    let lastPoint = points[pl-1];
 
-    // let constraints = [];
-    // let oldConstraints = this.state.constraints;
-    // constraints.push(eq).push(eq2)
-    // let newConstraints = oldConstraints.concat(constraints);
+    // if (pl === 2) {
+    //   //console.log("coincident!")
+    //   var eq = new c.Equation(points[0].x, new c.Expression(points[1].x));
+    //   var eq2 = new c.Equation(points[0].y, new c.Expression(points[1].y));
     //
-    // this.setState({constraints:newConstraints});
+    //   //constraints.push(eq).push(eq2)
+    //
+    //   this.solver.addConstraint(eq)
+    //              .addConstraint(eq2)
+    // }
 
-
-    if (pl === 2) {
-      //console.log("coincident!")
-      var eq = new c.Equation(points[0].x, new c.Expression(points[1].x));
-      var eq2 = new c.Equation(points[0].y, new c.Expression(points[1].y));
-
-      //constraints.push(eq).push(eq2)
+    points.slice(0, pl-1).forEach(point => {
+      var eq = new c.Equation(point.x, new c.Expression(lastPoint.x));
+      var eq2 = new c.Equation(point.y, new c.Expression(lastPoint.y));
 
       this.solver.addConstraint(eq)
                  .addConstraint(eq2)
-    }
-    //re-render
-    // let newConstraints = oldConstraints.concat(constraints);
-    //
+    })
+
     this.setState({});
   }
 
@@ -942,6 +939,62 @@ class DrawArea extends React.Component {
   }
 
 //------------------------------------------------
+
+  // invert(axis) {
+  //   let points = [];
+  //
+  //   this.state.shapes.forEach(shape => {
+  //     let newShape = newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
+  //
+  //     newShapes.push(newShape);
+  //
+  //     if (shape.selected) {
+  //       //points = (shape.shape_ === "line") ? points.concat(shape.points()) : points.concat(shape.points());
+  //       points = points.concat(shape.toLine());
+  //     }
+  //   })
+  //
+  //   let averageX = points.length > 1 ? points.reduce(functionAverageX) : undefined;
+  //   let averageY = points.length > 1 ? points.reduce(functionAverageY) : undefined;
+  //
+  //   let pivotPoint = {x:averageX, y:averageY}
+  //   //console.log(pivotPoint);
+  //
+  //   let newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
+  //
+  //   let newPoints = newShape.toLine().map(shapePoint => { //TODO: fix for lines to points()
+  //
+  //     let distanceToPivot = distance(shapePoint, pivot);
+  //     let angleWithPivot = functionGetAngle(shapePoint, pivot);
+  //     let delta = angleWithPivot + angle + Math.PI;
+  //
+  //     let newPoint = {x:pivot.x+Math.cos(delta)*distanceToPivot, y:pivot.y+Math.sin(delta)*distanceToPivot};
+  //     //console.log(angleWithPivot);
+  //
+  //     //let newPoint = {x:100, y:100};
+  //     return newPoint;
+  //   })
+  //
+  //   if (shape.shape_ === "freehand") {
+  //     newShape.points(newPoints);
+  //   } else {
+  //     newShape.pointsToCPoints(newPoints, this.solver);
+  //   }
+  //
+  //   return newShape;
+  //
+  //   let unselectedShapes = [];
+  //   this.state.shapes.forEach(shape => {
+  //     if (shape.selected === false) {
+  //       unselectedShapes.push(shape);
+  //     }
+  //   })
+  //   let allShapes = this.state.newShapes.concat(unselectedShapes);
+  //
+  //   this.setState( {
+  //     shapes: allShapes
+  //   });
+  // }
 
   copy(e) { //TODO: doesnt work with cPoints
     let newClipboard = [];
@@ -1200,18 +1253,6 @@ class DrawArea extends React.Component {
               let lastShape = oldShapes[oldShapes.length -1];
               let newShapes = oldShapes.slice(0, oldShapes.length - 1);
 
-              // let constraints = this.state.constraints;
-              // let c = constraints.length;
-              //
-              // console.log(constraints)
-
-              //TODO: remove last constraint, fix bug with last point being immobile
-
-              // this.solver.removeConstraint(constraints[c-1]);
-
-              //this.solver.removeConstraint();
-              //this.solver.removePointStays([lastShape.p1_, lastShape.p2_]);
-
               this.setState({
                 shapes: newShapes,
                 isDrawing:false,
@@ -1286,7 +1327,7 @@ class DrawArea extends React.Component {
 
   render() {
     this.solver.resolve;
-    let pointer = "";
+    let pointer;
 
     switch (this.state.tool) { //tooltips
       case "FREEHAND":
@@ -1294,9 +1335,6 @@ class DrawArea extends React.Component {
         break;
       case "POLYLINE":
         pointer = "crosshair";
-        break;
-      case "EDIT":
-        pointer = "default";
         break;
       case "MOVE":
         pointer = "move";
@@ -1319,17 +1357,22 @@ class DrawArea extends React.Component {
       case "PAN":
         pointer = "all-scroll";
         break;
+      case undefined:
+        pointer = "not-allowed";
+        break;
       default:
-        pointer = "crosshair";
+        pointer = "default";
     }
 
+    let width = 500;
+    let height = 500;
+
     let drawAreaStyle = {
-      width: "500px",
-      height: "500px",
+      width: width,
+      height: height,
       border: "1px solid black",
       float: "left",
       cursor: pointer,
-      float: "left",
     }
 
     let activeButtonStyle = {
@@ -1396,8 +1439,6 @@ class DrawArea extends React.Component {
       verticalAlign: "middle",
     }
 
-    //<tr><td><button style={this.state.tool === "LINE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickLine(e)}>Line</button></td></tr>
-
     let tool;
     switch (this.state.tool) {
       case "PAN":
@@ -1418,7 +1459,10 @@ class DrawArea extends React.Component {
       <div
         onKeyDown={(e) => this.handleKeyPress(e)}
         tabIndex="0"
-        style={{outline: "none"}}
+        style={{
+          border: "none",
+          margin:"auto",
+        }}
       >
         <div
           style={drawAreaStyle}
@@ -1428,7 +1472,7 @@ class DrawArea extends React.Component {
           onMouseUp={this.handleMouseUp}
         >
           <ReactSVGPanZoom
-            width={500} height={500}
+            width={width} height={height}
             onMouseMove={event => this.updateSVGMouse(event)}
             toolbarPosition={"none"}
             tool={tool}
@@ -1491,9 +1535,9 @@ class DrawArea extends React.Component {
                 <div>
                   <button style={downloadButtonStyle} onClick={(e) => this.setWorkpieceSize(e)}>Set Workpiece Size</button>
                   <label>width: </label>
-                  <input type="text" id="width" name="width"/>
+                  <input type="text" id="width" name="width" style={{width: "30px"}}/>
                   <label>height: </label>
-                  <input type="text" id="height" name="height"/>
+                  <input type="text" id="height" name="height" style={{width: "30px"}}/>
                 </div>
               </form>
             </td></tr>
@@ -1502,7 +1546,7 @@ class DrawArea extends React.Component {
                 <div>
                   <button style={downloadButtonStyle} onClick={(e) => this.handleDownload(e)}>Download SVG</button>
                   <label>name: </label>
-                  <input type="text" id="downloadName" name="downloadName"/>
+                  <input type="text" id="downloadName" name="downloadName" style={{width: "70px"}}/>
                 </div>
               </form>
             </td></tr>
@@ -1511,7 +1555,7 @@ class DrawArea extends React.Component {
                 <div>
                   <button style={downloadButtonStyle} onClick={(e) => this.handleSave(e)}>Save</button>
                   <label>name: </label>
-                  <input type="text" id="saveName" name="saveName"/>
+                  <input type="text" id="saveName" name="saveName" style={{width: "70px"}}/>
                 </div>
               </form>
             </td></tr>
