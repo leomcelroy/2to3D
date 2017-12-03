@@ -1,8 +1,7 @@
 import React, { Component } from 'react';
-import {Line, Polygon, Bezier, Rectangle, Freehand} from './Shape.js';
+import {Line, Bezier, Freehand} from './Shape.js';
 import {CoincidentConstraint, ParallelLineConstraint, PerpendicularLineConstraint, VerticalLineConstraint, HorizontalLineConstraint, angle} from './GeometricConstraintSolver.js';
 import {ReactSVGPanZoom} from 'react-svg-pan-zoom';
-import {AutoSizer} from 'react-virtualized';
 
 var c = require('cassowary');
 
@@ -30,6 +29,7 @@ class DrawArea extends React.Component {
       svgMouse: undefined,
       workpieceSize: {x:500, y:500},
       clipboard: [],
+      firstPolyline: undefined,
 
       solverPoints: [], //holds array of c.Point objects
       //file: undefined,
@@ -93,40 +93,43 @@ class DrawArea extends React.Component {
             isDrawing: true,
         });
         break;
-      case "LINE": //TODO: Make function like Polygon but using constraints
+      case "POLYLINE":
         if (this.state.isDrawing) {
-          this.solver.endEdit();
-          this.setState({
-            isDrawing: false
-          })
-        } else {
-          let line = new Line(point, this.solver);
-          this.solver
-            .addEditVar(line.p2_.x)
-            .addEditVar(line.p2_.y)
-            .beginEdit();
-          oldShapes.push(line);
-          this.setState({
-            shapes: oldShapes,
-            isDrawing: true,
-          });
-        }
-        break;
-      case "POLYGON":
-        if (this.state.isDrawing) {
-          if (oldShapes[oldShapes.length - 1].closed()) {
+          let firstLine = this.state.firstPolyline;
+          let lastLine = oldShapes[oldShapes.length - 1];
+
+          let closed = firstLine ? Math.abs(firstLine.toLine()[0].x - lastLine.toLine()[1].x) < 10 && Math.abs(firstLine.toLine()[0].y - lastLine.toLine()[1].y) < 10 : false;
+          if (closed) {
             console.log('closed');
             this.solver.endEdit();
+
+            let eq = new c.Equation(lastLine.p2_.x, new c.Expression(firstLine.p1_.x));
+            let eq2 = new c.Equation(lastLine.p2_.y, new c.Expression(firstLine.p1_.y));
+
+            this.solver.addConstraint(eq)
+                       .addConstraint(eq2)
+                       .solve();
+
             this.setState({
               isDrawing: false,
             });
           } else {
+            this.solver.endEdit();
+
             let line = new Line(point, this.solver);
             let oldLine = oldShapes[oldShapes.length - 1];
 
             //add coincident constraint
-            console.log("old x:", oldLine.p2_.x.value , "new x:",line.p1_.x.value);
-            console.log("old y:", oldLine.p2_.y.value , "new y:",line.p1_.y.value);
+            // console.log("old x:", oldLine.p2_.x.value , "new x:",line.p1_.x.value);
+            // console.log("old y:", oldLine.p2_.y.value , "new y:",line.p1_.y.value);
+
+
+            this.solver
+              .addEditVar(line.p2_.x)
+              .addEditVar(line.p2_.y)
+              .beginEdit();
+
+            oldShapes.push(line);
 
             let eq = new c.Equation(oldLine.p2_.x, new c.Expression(line.p1_.x));
             let eq2 = new c.Equation(oldLine.p2_.y, new c.Expression(line.p1_.y));
@@ -135,21 +138,13 @@ class DrawArea extends React.Component {
                        .addConstraint(eq2)
                        .solve();
 
-            this.solver
-              .addEditVar(line.p2_.x)
-              .addEditVar(line.p2_.y)
-              .beginEdit();
-
-            oldShapes.push(line);
-
-            //this.solver.solve();
-
             this.setState({
               shapes: oldShapes,
             });
           }
         } else {
           let line = new Line(point, this.solver);
+
             this.solver
               .addEditVar(line.p2_.x)
               .addEditVar(line.p2_.y)
@@ -158,13 +153,53 @@ class DrawArea extends React.Component {
             this.setState({
               shapes: oldShapes,
               isDrawing: true,
+              firstPolyline: line,
             });
         }
         break;
       case "RECTANGLE": //TODO: update to lines
-        let rectangle = new Rectangle(point);
+        let line1 = new Line(point, this.solver);
+        let line2 = new Line(point, this.solver);
+        let line3 = new Line(point, this.solver);
+        let line4 = new Line(point, this.solver);
 
-        oldShapes.push(rectangle);
+        let eq = new c.Equation(line1.p1_.x, new c.Expression(line2.p1_.x));
+        let eq2 = new c.Equation(line1.p1_.y, new c.Expression(line2.p1_.y));
+        let eq3 = new c.Equation(line1.p2_.x, new c.Expression(line3.p1_.x));
+        let eq4 = new c.Equation(line1.p2_.y, new c.Expression(line3.p1_.y));
+        let eq5 = new c.Equation(line2.p2_.x, new c.Expression(line4.p1_.x));
+        let eq6 = new c.Equation(line2.p2_.y, new c.Expression(line4.p1_.y));
+        let eq7 = new c.Equation(line3.p2_.x, new c.Expression(line4.p2_.x));
+        let eq8 = new c.Equation(line3.p2_.y, new c.Expression(line4.p2_.y));
+
+        let eq9 = new c.Equation(line1.p1_.y, new c.Expression(line1.p2_.y));
+        let eq10 = new c.Equation(line4.p1_.y, new c.Expression(line4.p2_.y));
+        let eq11 = new c.Equation(line2.p1_.x, new c.Expression(line2.p2_.x));
+        let eq12 = new c.Equation(line3.p1_.x, new c.Expression(line3.p2_.x));
+
+        this.solver.addConstraint(eq)
+                   .addConstraint(eq2)
+                   .addConstraint(eq3)
+                   .addConstraint(eq4)
+                   .addConstraint(eq5)
+                   .addConstraint(eq6)
+                   .addConstraint(eq7)
+                   .addConstraint(eq8)
+                   .addConstraint(eq9)
+                   .addConstraint(eq10)
+                   .addConstraint(eq11)
+                   .addConstraint(eq12)
+                   .solve();
+
+        oldShapes.push(line1);
+        oldShapes.push(line2);
+        oldShapes.push(line3);
+        oldShapes.push(line4);
+
+        this.solver
+          .addEditVar(line4.p2_.x)
+          .addEditVar(line4.p2_.y)
+          .beginEdit();
 
         this.setState({
           shapes: oldShapes,
@@ -450,15 +485,6 @@ class DrawArea extends React.Component {
     //let oldState = this.state.lines;
 
     switch (this.state.tool) {
-      case "LINE":
-        var lastLine = oldShapes[oldShapes.length - 1];
-        this.solver
-          .suggestValue(lastLine.p2_.x, point.x)
-          .suggestValue(lastLine.p2_.y, point.y)
-          .resolve();
-        this.setState({});
-      break;
-
       case "BEZIER":
         oldShapes[oldShapes.length -1].lastPoint(point); //update the last point of the polygon
         this.setState({
@@ -466,9 +492,14 @@ class DrawArea extends React.Component {
         });
         break;
       case "RECTANGLE":
-        //console.log(this.state.isDrawing);
+        var lastLine = oldShapes[oldShapes.length - 1];
+        this.solver
+          .suggestValue(lastLine.p2_.x, point.x)
+          .suggestValue(lastLine.p2_.y, point.y)
+          .resolve();
+        this.setState({});
         if (!this.state.isDrawing) {break;};
-      case "POLYGON":
+      case "POLYLINE":
         var lastLine = oldShapes[oldShapes.length - 1];
         this.solver
           .suggestValue(lastLine.p2_.x, point.x)
@@ -510,13 +541,11 @@ class DrawArea extends React.Component {
           onDragEndCallbacks: [],
         });
         break;
-      case "POLYGON": //close polygon using constraints
-        break;
-      case "LINE":
-        //do nothing
+      case "POLYLINE": //close POLYLINE using constraints
         break;
       case "RECTANGLE":
         //console.log("mouse going up");
+        this.solver.endEdit();
         this.setState({ isDrawing: false });
         break;
       case "ROTATE": // fall-through, or statement doesn't work
@@ -549,7 +578,6 @@ class DrawArea extends React.Component {
       } catch (e) {/*do nothing */}
     });
 
-
     let dx = point.x - this.state.dragStart.x;
     let dy = point.y - this.state.dragStart.y;
 
@@ -572,11 +600,15 @@ class DrawArea extends React.Component {
     let updateTheseConstraints = [];
     this.state.selectedPoints.forEach(sPoint => {
       let containingParallelConstraints = this.findContainingParallelConstraints(sPoint);
+
       containingParallelConstraints.forEach(constraint => {
         this.updateConstraint(constraint, sPoint);
       });
+
       updateTheseConstraints = updateTheseConstraints.concat(containingParallelConstraints);
+
     });
+
 
     //re-add constraints (only unique constraints)
     updateTheseConstraints = updateTheseConstraints.filter((value, index, arr) => arr.indexOf(value) === index);
@@ -594,6 +626,19 @@ class DrawArea extends React.Component {
   findContainingParallelConstraints(point) {
     let constraints = [];
     this.state.parallelConstraints.forEach(constraint => {
+      if (constraint.line1.p1_ === point ||
+          constraint.line1.p2_ === point ||
+          constraint.line2.p1_ === point ||
+          constraint.line2.p2_ === point) {
+            constraints.push(constraint);
+        }
+    });
+    return constraints;
+  }
+
+  findContainingPerpendicularConstraints(point) {
+    let constraints = [];
+    this.state.perpendicularConstraints.forEach(constraint => {
       if (constraint.line1.p1_ === point ||
           constraint.line1.p2_ === point ||
           constraint.line2.p1_ === point ||
@@ -675,16 +720,27 @@ class DrawArea extends React.Component {
     let points = this.state.selectedPoints;
     let pl = points.length;
 
+    // let constraints = [];
+    // let oldConstraints = this.state.constraints;
+    // constraints.push(eq).push(eq2)
+    // let newConstraints = oldConstraints.concat(constraints);
+    //
+    // this.setState({constraints:newConstraints});
+
 
     if (pl === 2) {
       //console.log("coincident!")
-      var eq = new c.Equation(points[pl-1].x, new c.Expression(points[0].x));
-      var eq2 = new c.Equation(points[pl-1].y, new c.Expression(points[0].y));
+      var eq = new c.Equation(points[0].x, new c.Expression(points[1].x));
+      var eq2 = new c.Equation(points[0].y, new c.Expression(points[1].y));
+
+      //constraints.push(eq).push(eq2)
 
       this.solver.addConstraint(eq)
                  .addConstraint(eq2)
     }
     //re-render
+    // let newConstraints = oldConstraints.concat(constraints);
+    //
     this.setState({});
   }
 
@@ -693,11 +749,10 @@ class DrawArea extends React.Component {
     let pl = points.length;
 
 
-    if (pl === 1) {
-      //console.log("coincident!")
-      this.solver.addConstraint(new c.Equation(points[pl-1].x.value, new c.Expression(points[pl-1].x)))
-                 .addConstraint(new c.Equation(points[pl-1].y.value, new c.Expression(points[pl-1].y)));
-    }
+    points.forEach(point => {
+      this.solver.addConstraint(new c.Equation(point.x.value, new c.Expression(point.x)))
+                 .addConstraint(new c.Equation(point.y.value, new c.Expression(point.y)));
+    })
     //re-render
     this.setState({});
   }
@@ -802,14 +857,14 @@ class DrawArea extends React.Component {
       console.log(ratio, invratio);
       if (Math.abs(ratio) < Math.abs(invratio)) {
         isInverse = false;
-        constr1 = this.makeAngleConstraint(line1, ratio, false);
-        constr2 = this.makeAngleConstraint(line2, ratio, false);
+        constr1 = this.makeAngleConstraint(line1, 1, false);
+        constr2 = this.makeAngleConstraint(line2, 1, false);
         this.solver.addConstraint(constr1);
         this.solver.addConstraint(constr2);
       } else {
         isInverse = true;
-        constr1 = this.makeAngleConstraint(line1, invratio, true);
-        constr2 = this.makeAngleConstraint(line2, invratio, true);
+        constr1 = this.makeAngleConstraint(line1, 1, true);
+        constr2 = this.makeAngleConstraint(line2, 1, true);
         this.solver.addConstraint(constr1);
         this.solver.addConstraint(constr2);
       }
@@ -839,15 +894,43 @@ class DrawArea extends React.Component {
     return eq;
   }
 
-  makePerpendicular() {
-    let oldConstraints = this.state.constraints;
-    let c = PerpendicularLineConstraint(this.state.selectedLines[this.state.selectedLines.length-2], this.state.selectedLines[this.state.selectedLines.length-1]);
-    oldConstraints.push(c);
-    this.setState({
-      constraints: oldConstraints,
-    });
-    this.constraintUpdate();
-  }
+  // makePerpendicular() {
+  //   let selectedLines = [];
+  //   this.state.shapes.forEach(shape => {
+  //     if (shape.shape_ === 'line' && shape.selected) {
+  //       selectedLines.push(shape);
+  //     }
+  //   });
+  //   if (selectedLines.length === 2) { //TODO: expand to more lines?
+  //     let line1 = selectedLines[0];
+  //     let line2 = selectedLines[1];
+  //     let ratio = (line1.p2_.y.value - line1.p1_.y.value) / (line1.p2_.x.value - line1.p1_.x.value);
+  //     let invratio = (line1.p2_.x.value - line1.p1_.x.value) / (line1.p2_.y.value - line1.p1_.y.value);
+  //     var isInverse, constr1, constr2;
+  //     console.log(ratio, invratio);
+  //     if (Math.abs(ratio) < Math.abs(invratio)) {
+  //       isInverse = false;
+  //       constr1 = this.makeAngleConstraint(line1, -1/invratio, false);
+  //       constr2 = this.makeAngleConstraint(line2, invratio, false);
+  //       this.solver.addConstraint(constr1);
+  //       this.solver.addConstraint(constr2);
+  //     } else {
+  //       isInverse = true;
+  //       constr1 = this.makeAngleConstraint(line1, -1/ratio, true);
+  //       constr2 = this.makeAngleConstraint(line2, ratio, true);
+  //       this.solver.addConstraint(constr1);
+  //       this.solver.addConstraint(constr2);
+  //     }
+  //
+  //     let parConstrObj = {line1, line2, constr1, constr2, isInverse};
+  //     let oldConstraints = this.state.perpendicularConstraints;
+  //     oldConstraints.push(parConstrObj);
+  //     //re-render
+  //     this.setState({perpendicularConstraints: oldConstraints});
+  //
+  //
+  //   }
+  // }
 
 //------------------------component mount functions------------------------
   componentDidMount() {
@@ -963,7 +1046,7 @@ class DrawArea extends React.Component {
     }
   }
 
-  handleUpload(e) { //only works for polygons -shapes- now, needs to maintain constraints as well
+  handleUpload(e) { //only works for POLYLINEs -shapes- now, needs to maintain constraints as well
     e.preventDefault();
     let files = e.target.files;
     let file = files[0];
@@ -984,9 +1067,6 @@ class DrawArea extends React.Component {
           switch (oldShape.shape_) {   //different shapes can be added here
             case "freehand":
               newShape = new Freehand;
-              break;
-            case "rectangle":
-              newShape = new Rectangle;
               break;
             case "line":
               newShape = new Line({x:0,y:0}, this.solver);
@@ -1087,10 +1167,10 @@ class DrawArea extends React.Component {
     switch (code) {
       case 13: //enter
         switch (this.state.tool) {
-          case "POLYGON":
+          case "POLYLINE":
               //TODO: remove last constraint, fix bug with second to last point being immobile
-              this.setState({isDrawing:false})
               this.solver.endEdit().resolve();
+              this.setState({isDrawing:false})
             break;
           default:
             return;
@@ -1098,25 +1178,36 @@ class DrawArea extends React.Component {
         break;
       case 27: //esc
         switch (this.state.tool) {
-          case "POLYGON":
+          case "POLYLINE":
+              this.solver.endEdit().resolve();
+
               let oldShapes = this.state.shapes;
+              let lastShape = oldShapes[oldShapes.length -1];
+              let newShapes = oldShapes.slice(0, oldShapes.length - 1);
+
+              // let constraints = this.state.constraints;
+              // let c = constraints.length;
+              //
+              // console.log(constraints)
 
               //TODO: remove last constraint, fix bug with last point being immobile
 
+              // this.solver.removeConstraint(constraints[c-1]);
+
               //this.solver.removeConstraint();
+              //this.solver.removePointStays([lastShape.p1_, lastShape.p2_]);
 
               this.setState({
-                shapes: oldShapes.slice(0, oldShapes.length - 1),
+                shapes: newShapes,
                 isDrawing:false,
               })
-              this.solver.endEdit().resolve();
             break;
           default:
             return;
         }
         break;
       case 80: //p
-        this.setState({tool:"POLYGON"})
+        this.setState({tool:"POLYLINE"})
         break;
       case 70: //f
         this.setState({tool:"FREEHAND"})
@@ -1151,12 +1242,12 @@ class DrawArea extends React.Component {
         })
         this.setState( {shapes: unselectedShapes, newShapes:[]} );
         break;
-      // case 187: //+
-      //   this.setState({tool:"ZOOMIN"})
-      //   break;
-      // case 189: //-
-      //   this.setState({tool:"ZOOMOUT"})
-      //   break;
+      case 187: //+
+        this.setState({tool:"ZOOMIN"})
+        break;
+      case 189: //-
+        this.setState({tool:"ZOOMOUT"})
+        break;
       // case 69: //e
       //   this.setState({tool:"EDIT"})
       //   break;
@@ -1176,7 +1267,7 @@ class DrawArea extends React.Component {
       case "FREEHAND":
         pointer = "crosshair";
         break;
-      case "POLYGON":
+      case "POLYLINE":
         pointer = "crosshair";
         break;
       case "EDIT":
@@ -1281,24 +1372,41 @@ class DrawArea extends React.Component {
     }
 
     //<tr><td><button style={this.state.tool === "LINE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickLine(e)}>Line</button></td></tr>
-    let pan = this.state.tool === "PAN" ? true : false;
+
+    let tool;
+    switch (this.state.tool) {
+      case "PAN":
+        tool = "pan";
+        break;
+      case "ZOOMOUT":
+        tool = "zoom-out";
+        break;
+      case "ZOOMIN":
+        tool = "zoom-in";
+        break;
+      default:
+        tool = "none";
+        break;
+    }
 
     return (
-      <div>
+      <div
+        onKeyDown={(e) => this.handleKeyPress(e)}
+        tabIndex="0"
+        style={{outline: "none"}}
+      >
         <div
           style={drawAreaStyle}
           ref="drawArea"
           onMouseDown={this.handleMouseDown}
           onMouseMove={this.handleMouseMove}
           onMouseUp={this.handleMouseUp}
-          onKeyDown={(e) => this.handleKeyPress(e)}
-          tabIndex="0"
         >
           <ReactSVGPanZoom
             width={500} height={500}
             onMouseMove={event => this.updateSVGMouse(event)}
             toolbarPosition={"none"}
-            tool={pan ? "pan" : "none"}
+            tool={tool}
             miniaturePosition={"left"}>
 
             <svg width={this.state.workpieceSize.x} height={this.state.workpieceSize.y}>
@@ -1314,10 +1422,9 @@ class DrawArea extends React.Component {
         <table style={{float:"left"}}>
           <tbody>
             <tr><td><b>Tools</b></td></tr>
-            <tr><td><button style={this.state.tool === "LINE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("LINE")}>Line</button></td></tr>
-            <tr><td><button style={this.state.tool === "FREEHAND" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("FREEHAND")}>Free Hand</button></td></tr>
-            <tr><td><button style={this.state.tool === "RECTANGLE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("RECTANGLE")}>TODO: Rectangle</button></td></tr>
-            <tr><td><button style={this.state.tool === "POLYGON" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("POLYGON")}>TODO: Polygon</button></td></tr>
+            <tr><td><button style={this.state.tool === "FREEHAND" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("FREEHAND")}>Freehand</button></td></tr>
+            <tr><td><button style={this.state.tool === "RECTANGLE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("RECTANGLE")}>Rectangle</button></td></tr>
+            <tr><td><button style={this.state.tool === "POLYLINE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("POLYLINE")}>Polyline</button></td></tr>
             <tr><td><button style={this.state.tool === "BEZIER" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("BEZIER")}>TODO: Bezier</button></td></tr>
             <tr><td><button style={this.state.tool === "SELECT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SELECT")}>Select</button></td></tr>
             <tr><td>Direct Transform</td></tr>
@@ -1326,6 +1433,8 @@ class DrawArea extends React.Component {
             <tr><td><button style={this.state.tool === "SCALE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SCALE")}>Scale</button></td></tr>
             <tr><td>View Tools</td></tr>
             <tr><td><button style={this.state.tool === "PAN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("PAN")}>Pan</button></td></tr>
+            <tr><td><button style={this.state.tool === "ZOOMIN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMIN")}>Zoom In</button></td></tr>
+            <tr><td><button style={this.state.tool === "ZOOMOUT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMOUT")}>Zoom Out</button></td></tr>
             <tr><td></td></tr>
             <tr><td>Other</td></tr>
             <tr><td><button style={this.state.tool === undefined ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickNoTool(e)}>No Tool</button></td></tr>
@@ -1346,7 +1455,7 @@ class DrawArea extends React.Component {
             </tr>
             <tr>
               <td>
-                <button style={defaultButtonStyle} onClick={(e) => this.makeParallel(e)}>TODO: Parallel</button>
+                <button style={defaultButtonStyle} onClick={(e) => this.makeParallel(e)}>Parallel</button>
                 <button style={defaultButtonStyle} onClick={(e) => this.makePerpendicular(e)}>TODO: Perpendicular</button>
                 <button style={defaultButtonStyle} onClick={(e) => this.makeFixed(e)}>Fixed</button>
               </td>
