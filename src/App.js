@@ -951,6 +951,7 @@ class DrawArea extends React.Component {
   paste(e) {
     let oldShapes = this.state.shapes;
     let copied = this.state.clipboard;
+    let newShapes = [];
 
     oldShapes.forEach(shape => {
       if (shape.shape_ === "line") {
@@ -963,18 +964,22 @@ class DrawArea extends React.Component {
     copied.forEach((shape) => {
 
       let newPoints = shape.toLine().map(shapePoint => {
-          return ({x:shapePoint.x+(10), y:shapePoint.y+(10)})
+          return ({x:shapePoint.x+(30), y:shapePoint.y+(30)})
         });
 
+      let newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
+
       if (shape.shape_ === "freehand") {
-        shape.points(newPoints);
+        newShape.points(newPoints);
         //console.log(newShape);
       } else {
-        shape.pointsToCPoints(newPoints, this.solver);
+        newShape.pointsToCPoints(newPoints, this.solver);
       }
+
+      newShapes.push(newShape);
     });
 
-    let newShapes = oldShapes.concat(copied);
+    newShapes = oldShapes.concat(newShapes);
 
 
     this.setState({shapes:newShapes});
@@ -1163,6 +1168,8 @@ class DrawArea extends React.Component {
   handleKeyPress(e) {
     let code = (e.keyCode ? e.keyCode : e.which);
     console.log(code);
+    let cmdDown = e.metaKey;
+
     switch (code) {
       case 13: //enter
         switch (this.state.tool) {
@@ -1246,6 +1253,16 @@ class DrawArea extends React.Component {
         break;
       case 189: //-
         this.setState({tool:"ZOOMOUT"})
+        break;
+      case 67: //c
+        if (cmdDown === true) {
+          this.copy();
+        }
+        break;
+      case 86: //v
+        if (cmdDown === true) {
+          this.paste();
+        }
         break;
       // case 69: //e
       //   this.setState({tool:"EDIT"})
@@ -1460,10 +1477,6 @@ class DrawArea extends React.Component {
               </td>
             </tr>
             <tr><td><b>File</b></td></tr>
-            <tr><td>
-              <button style={downloadButtonStyle} onClick={(e) => this.copy(e)}>Copy</button>
-              <button style={downloadButtonStyle} onClick={(e) => this.paste(e)}>Paste</button>
-            </td></tr>
             <tr><td>
               <form>
                 <div>
