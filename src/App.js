@@ -273,8 +273,6 @@ class DrawArea extends React.Component {
           dragStart: point,
         });
 
-        console.log('selected Points:', this.state.selectedPoints);
-
         // let selectedPoints = this.state.
         break;
       case "MOVE":
@@ -531,7 +529,9 @@ class DrawArea extends React.Component {
         break;
       case "SELECT":
         //console.log("ender");
-        this.solver.endEdit();
+        if(this.solver._editVarMap.size > 0) {
+          this.solver.endEdit();
+        }
         //console.log("dragged", this.state.mouseDragged);
         if (!this.state.mouseDragged) {
             this.state.onDragEndCallbacks.forEach(callback => callback());
@@ -610,9 +610,8 @@ class DrawArea extends React.Component {
     });
 
 
-    //re-add constraints (only unique constraints)
-    updateTheseConstraints = updateTheseConstraints.filter((value, index, arr) => arr.indexOf(value) === index);
-    updateTheseConstraints.forEach(constraint => {
+    //re-add constraints
+    this.state.parallelConstraints.forEach(constraint => {
       this.solver.addConstraint(constraint.constr1);
       this.solver.addConstraint(constraint.constr2);
     });
