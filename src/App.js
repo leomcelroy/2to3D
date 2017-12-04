@@ -741,8 +741,8 @@ class DrawArea extends React.Component {
     // }
 
     points.slice(0, pl-1).forEach(point => {
-      var eq = new c.Equation(point.x, new c.Expression(lastPoint.x));
-      var eq2 = new c.Equation(point.y, new c.Expression(lastPoint.y));
+      var eq = new c.Equation(lastPoint.x, new c.Expression(point.x));
+      var eq2 = new c.Equation(lastPoint.y, new c.Expression(point.y));
 
       this.solver.addConstraint(eq)
                  .addConstraint(eq2)
