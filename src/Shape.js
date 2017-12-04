@@ -23,16 +23,6 @@ class Line {
     solver.addPointStays([this.p1_, this.p2_]);
   }
 
-  // points(points) {
-  //   if (points === undefined) {
-  //     return [this.p1_, this.p2_];
-  //   }
-  //   this.p1_ = points[0];
-  //   this.p2_ = points[1];
-  //
-  //   //this.points_ = points;
-  // }
-
   p1(p) { if (p){ this.p1_ = p; return this;} return this.p1_};
 
   p2(p) { if (p){ this.p2_ = p; return this;} return this.p2_};
@@ -47,6 +37,15 @@ class Line {
   }
 
   toLines() { return [this.toLine()] };
+
+  distance() {
+    let p1 = this.toLine()[0];
+    let p2 = this.toLine()[1];
+
+    let distance = distanceSquared(p1, p2)**(1/2);
+
+    return distance;
+  }
 
   closed() {return false};
 
@@ -128,7 +127,7 @@ class Line {
     return false;
   }
 
-  svgRender() {
+  svgRender(index, lengths = true) {
       let circle1Color = this.p1_selected ? "blue" : "black";
       let circle2Color = this.p2_selected ? "blue" : "black";
       let lineColor = this.selected ? "blue" : "black";
@@ -143,9 +142,23 @@ class Line {
 
       const pathData = "M " + this.toLine().map(p => `${p['x']} ${p['y']}`);
 
+      let selectedAtAll = (this.selected || this.p1_selected || this.p2_selected) && lengths;
+
+      console.log(lengths);
+
+      let textStyle = {
+        WebkitTouchCallout: "none", /* iOS Safari */
+          WebkitUserSelect: "none", /* Safari */
+           khtmlUserSelect: "none", /* Konqueror HTML */
+             MozUserSelect: "none", /* Firefox */
+              msUserSelect: "none", /* Internet Explorer/Edge */
+                userSelect: "none", /* Non-prefixed version, currently
+                                        supported by Chrome and Opera */
+      }
       return (
         <g>
-          <path d={pathData} style={style}/>
+          <path d={pathData} style={style} id={`${index}`}/>
+          {(selectedAtAll) ? <text dy={"-8"}><textPath href={`#${index}`} startOffset={"43%"} style={textStyle}>{Math.round(this.distance()*1000)/1000}</textPath></text> : null}
           <circle cx={`${this.p1_.x.value}`} cy={`${this.p1_.y.value}`} r="5" fill={circle1Color}/>
           <circle cx={`${this.p2_.x.value}`} cy={`${this.p2_.y.value}`} r="5" fill={circle2Color}/>
         </g>

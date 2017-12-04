@@ -66,6 +66,7 @@ class DrawArea extends React.Component {
       workpieceSize: {x:500, y:500},
       clipboard: [],
       firstPolyline: undefined,
+      displayLengths: true,
 
       solverPoints: [], //holds array of c.Point objects
       //file: undefined,
@@ -1206,6 +1207,12 @@ class DrawArea extends React.Component {
     }
   }
 
+  handleCheckbox(e) {
+    let newState = !this.state.displayLengths;
+
+    this.setState({ displayLengths : newState });
+  }
+
   constraintUpdate() {
     let changed = false;
     this.state.constraints.forEach((constraint) => {
@@ -1469,8 +1476,8 @@ class DrawArea extends React.Component {
             miniaturePosition={"left"}>
 
             <svg width={this.state.workpieceSize.x} height={this.state.workpieceSize.y}>
-              {this.state.shapes.map(shape => shape.svgRender(this.state.workpieceSize.x, this.state.workpieceSize.y))};
-              {this.state.newShapes.map(shape => shape.svgRender(this.state.workpieceSize.x, this.state.workpieceSize.y))}
+              {this.state.shapes.map((shape,index) => shape.svgRender(index, this.state.displayLengths))};
+              {this.state.newShapes.map(shape => shape.svgRender())}
             </svg>
 
 
@@ -1492,8 +1499,11 @@ class DrawArea extends React.Component {
             <tr><td><button style={this.state.tool === "SCALE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SCALE")}>Scale</button></td></tr>
             <tr><td>View Tools</td></tr>
             <tr><td><button style={this.state.tool === "PAN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("PAN")}>Pan</button></td></tr>
-            <tr><td><button style={this.state.tool === "ZOOMIN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMIN")}>Zoom In</button></td></tr>
-            <tr><td><button style={this.state.tool === "ZOOMOUT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMOUT")}>Zoom Out</button></td></tr>
+            <tr><td>
+              <button style={this.state.tool === "ZOOMIN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMIN")}>Zoom In</button>
+              <button style={this.state.tool === "ZOOMOUT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMOUT")}>Zoom Out</button>
+            </td></tr>
+            <tr><td>Display Lengths: <input id="checkBox" type="checkbox" checked={this.state.displayLengths} onChange={(e) => this.handleCheckbox(e)}/></td></tr>
             <tr><td></td></tr>
             <tr><td>Other</td></tr>
             <tr><td><button style={this.state.tool === undefined ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickNoTool(e)}>No Tool</button></td></tr>
