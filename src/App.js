@@ -67,6 +67,10 @@ class DrawArea extends React.Component {
       clipboard: [],
       firstPolyline: undefined,
       displayLengths: true,
+      rotation: undefined,
+      translation: undefined,
+      scaleFactor: undefined,
+      displayTransformations: false,
 
       solverPoints: [], //holds array of c.Point objects
       //file: undefined,
@@ -95,6 +99,8 @@ class DrawArea extends React.Component {
       case "FREEHAND":
 
         let freehandCurve = new Freehand(point);
+
+
         oldShapes.push(freehandCurve);
 
         this.setState({
@@ -107,9 +113,12 @@ class DrawArea extends React.Component {
           let firstLine = this.state.firstPolyline;
           let lastLine = oldShapes[oldShapes.length - 1];
 
+          (lastLine) ? lastLine.deselect() : null;
+
           let closed = firstLine ? Math.abs(firstLine.toLine()[0].x - lastLine.toLine()[1].x) < 10 && Math.abs(firstLine.toLine()[0].y - lastLine.toLine()[1].y) < 10 : false;
           if (closed) {
             console.log('closed');
+            //lastLine.deselect();
             this.solver.endEdit();
 
             let eq = new c.Equation(lastLine.p2_.x, new c.Expression(firstLine.p1_.x));
@@ -123,6 +132,7 @@ class DrawArea extends React.Component {
               isDrawing: false,
             });
           } else {
+            //lastLine.deselect();
             this.solver.endEdit();
 
             let line = new Line(point, this.solver);
@@ -137,6 +147,8 @@ class DrawArea extends React.Component {
               .addEditVar(line.p2_.x)
               .addEditVar(line.p2_.y)
               .beginEdit();
+
+            line.p2_selected = true;
 
             oldShapes.push(line);
 
@@ -158,7 +170,11 @@ class DrawArea extends React.Component {
               .addEditVar(line.p2_.x)
               .addEditVar(line.p2_.y)
               .beginEdit();
+
+            line.p2_selected = true;
+
             oldShapes.push(line);
+
             this.setState({
               shapes: oldShapes,
               isDrawing: true,
@@ -356,6 +372,11 @@ class DrawArea extends React.Component {
             var point = this.relativeCoordinatesForEvent(mouseEvent);
             let newShapes = [];
 
+            let xTranslation = Math.round((point.x-this.state.pivotPoint.x)*100)/100;
+            let yTranslation = -Math.round((point.y-this.state.pivotPoint.y)*100)/100;
+
+            if (this.state.displayTransformations) {this.setState({translation:{x:xTranslation, y:yTranslation}});}
+
             this.state.originalShapes.forEach((shape) => {
               if (shape.selected) {
                 let newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
@@ -413,8 +434,10 @@ class DrawArea extends React.Component {
             let pivot = this.state.pivotPoint;
             let ogAngle = functionGetAngle(ogPoint, pivot);
             let newAngle = functionGetAngle(point, pivot);
-            //console.log(newAngle - ogAngle);
 
+            //console.log("angle", (newAngle - ogAngle)/(Math.PI * 2) * 360);
+            let degrees = Math.round((newAngle - ogAngle)/(Math.PI * 2) * 360 * 100) / 100;
+            if (this.state.displayTransformations) {this.setState({rotation:degrees})};
             //functionRotate(newAngle - ogAngle, pivot, this.state.originalShapes[0]);
 
             this.state.originalShapes.forEach((shape) => {
@@ -437,6 +460,10 @@ class DrawArea extends React.Component {
             var pivot = this.state.pivotPoint;
 
             let factor = distance(point, pivot)/distance(ogPoint, pivot); // if point is inside shape factor should be less than 1
+
+            let scaleFactor = Math.round(factor*100)/100;
+
+            if (this.state.displayTransformations) {this.setState({scaleFactor:scaleFactor});};
 
             //console.log("scale factor",factor);
 
@@ -550,6 +577,12 @@ class DrawArea extends React.Component {
       case "ROTATE": // fall-through, or statement doesn't work
       case "SCALE":
       case "MOVE":
+        this.setState({
+          translation:undefined,
+          rotation:undefined,
+          scaleFactor:undefined,
+        });
+
         let unselectedShapes = [];
         this.state.shapes.forEach(shape => {
           if (shape.selected === false) {
@@ -1207,10 +1240,16 @@ class DrawArea extends React.Component {
     }
   }
 
-  handleCheckbox(e) {
+  handleLengthCheckbox(e) {
     let newState = !this.state.displayLengths;
 
     this.setState({ displayLengths : newState });
+  }
+
+  handleTransformCheckbox(e) {
+    let newState = !this.state.displayTransformations;
+
+    this.setState({ displayTransformations : newState });
   }
 
   constraintUpdate() {
@@ -1230,12 +1269,16 @@ class DrawArea extends React.Component {
     console.log(code);
     let cmdDown = e.metaKey;
 
+    let oldShapes = this.state.shapes;
+    let lastShape = oldShapes[oldShapes.length -1];
+    let newShapes = oldShapes.slice(0, oldShapes.length - 1);
+
     switch (code) {
       case 13: //enter
         switch (this.state.tool) {
           case "POLYLINE":
-              //TODO: remove last constraint, fix bug with second to last point being immobile
               this.solver.endEdit().resolve();
+              lastShape.deselect();
               this.setState({isDrawing:false})
             break;
           default:
@@ -1247,9 +1290,7 @@ class DrawArea extends React.Component {
           case "POLYLINE":
               this.solver.endEdit().resolve();
 
-              let oldShapes = this.state.shapes;
-              let lastShape = oldShapes[oldShapes.length -1];
-              let newShapes = oldShapes.slice(0, oldShapes.length - 1);
+              lastShape.deselect();
 
               this.setState({
                 shapes: newShapes,
@@ -1476,8 +1517,8 @@ class DrawArea extends React.Component {
             miniaturePosition={"left"}>
 
             <svg width={this.state.workpieceSize.x} height={this.state.workpieceSize.y}>
-              {this.state.shapes.map((shape,index) => shape.svgRender(index, this.state.displayLengths))};
-              {this.state.newShapes.map(shape => shape.svgRender())}
+              {this.state.shapes.map((shape,index) => shape.svgRender(`shapes:${index}`, this.state.displayLengths))};
+              {this.state.newShapes.map((shape, index) => shape.svgRender(`newShapes:${index}`, this.state.displayLengths))}
             </svg>
 
 
@@ -1494,17 +1535,17 @@ class DrawArea extends React.Component {
             <tr><td><button style={this.state.tool === "BEZIER" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("BEZIER")}>TODO: Bezier</button></td></tr>
             <tr><td><button style={this.state.tool === "SELECT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SELECT")}>Select</button></td></tr>
             <tr><td>Direct Transform</td></tr>
-            <tr><td><button style={this.state.tool === "MOVE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("MOVE")}>Move</button></td></tr>
-            <tr><td><button style={this.state.tool === "ROTATE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ROTATE")}>Rotate</button></td></tr>
-            <tr><td><button style={this.state.tool === "SCALE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SCALE")}>Scale</button></td></tr>
+            <tr><td><button style={this.state.tool === "MOVE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("MOVE")}>Move</button>{this.state.translation ? `X: ${this.state.translation.x} Y: ${this.state.translation.y}` : null}</td></tr>
+            <tr><td><button style={this.state.tool === "ROTATE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ROTATE")}>Rotate</button>{this.state.rotation ? `Angle: ${this.state.rotation}` : null} {this.state.rotation && <sup>o</sup>}</td></tr>
+            <tr><td><button style={this.state.tool === "SCALE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SCALE")}>Scale</button>{this.state.scaleFactor ? `Factor: ${this.state.scaleFactor}` : null}</td></tr>
             <tr><td>View Tools</td></tr>
             <tr><td><button style={this.state.tool === "PAN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("PAN")}>Pan</button></td></tr>
             <tr><td>
               <button style={this.state.tool === "ZOOMIN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMIN")}>Zoom In</button>
               <button style={this.state.tool === "ZOOMOUT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMOUT")}>Zoom Out</button>
             </td></tr>
-            <tr><td>Display Lengths: <input id="checkBox" type="checkbox" checked={this.state.displayLengths} onChange={(e) => this.handleCheckbox(e)}/></td></tr>
-            <tr><td></td></tr>
+            <tr><td>Display Lengths: <input id="checkBox" type="checkbox" checked={this.state.displayLengths} onChange={(e) => this.handleLengthCheckbox(e)}/></td></tr>
+            <tr><td>Display Transformations: <input id="checkBox" type="checkbox" checked={this.state.displayTransformations} onChange={(e) => this.handleTransformCheckbox(e)}/></td></tr>
             <tr><td>Other</td></tr>
             <tr><td><button style={this.state.tool === undefined ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickNoTool(e)}>No Tool</button></td></tr>
             <tr><td><b>Constraints</b></td></tr>

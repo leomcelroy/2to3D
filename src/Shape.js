@@ -144,8 +144,6 @@ class Line {
 
       let selectedAtAll = (this.selected || this.p1_selected || this.p2_selected) && lengths;
 
-      console.log(lengths);
-
       let textStyle = {
         WebkitTouchCallout: "none", /* iOS Safari */
           WebkitUserSelect: "none", /* Safari */
@@ -175,6 +173,7 @@ class Freehand {
     this.selected = false;
 
     if (point) {
+      this.points_.push(point);
       this.points_.push(point);
     }
   }
