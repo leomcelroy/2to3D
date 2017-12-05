@@ -1334,9 +1334,9 @@ class DrawArea extends React.Component {
           this.paste();
         }
         break;
-      // case 69: //e
-      //   this.setState({tool:"EDIT"})
-      //   break;
+      case 69: //e
+        this.setState({tool:"RECTANGLE"})
+        break;
       // case 84: //test
       //   console.log(this.state.file)
       //   break;
@@ -1555,13 +1555,13 @@ class DrawArea extends React.Component {
             <button style={defaultButtonStyle} onClick={(e) => this.makeVertical(e)}>Vertical</button>
           </li>
           <li>
-            <button style={defaultButtonStyle} onClick={(e) => this.setDistance(e, this.solver)}>Distance</button>
             <button style={defaultButtonStyle} onClick={(e) => this.makeCoincident(e)}>Coincident</button>
+            <button style={defaultButtonStyle} onClick={(e) => this.makeFixed(e)}>Fixed</button>
           </li>
           <li>
             <button style={defaultButtonStyle} onClick={(e) => this.makeParallel(e)}>Parallel</button>
             <button style={defaultButtonStyle} onClick={(e) => this.makePerpendicular(e)}>Perpendicular</button>
-            <button style={defaultButtonStyle} onClick={(e) => this.makeFixed(e)}>Fixed</button>
+            <button style={defaultButtonStyle} onClick={(e) => this.setDistance(e, this.solver)}>Distance</button>
           </li>
           <li><b>File</b></li>
           <li>

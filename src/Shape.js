@@ -8,7 +8,7 @@ class AbstractLine {
     this.p1_ = new c.Point(startingPoint.x, startingPoint.y);
     this.p2_ = new c.Point(startingPoint.x, startingPoint.y);
     this.pointSelectDistance_ = 5; //todo: setter / getter
-    this.lineSelectDistance_ = 0.04;
+    this.lineSelectDistance_ = .06; //0.04;
     this.selected = false;
     this.p1_selected = false;
     this.p2_selected = false;
