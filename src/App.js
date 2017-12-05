@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import {Line, Bezier, Freehand} from './Shape.js';
-import {CoincidentConstraint, ParallelLineConstraint, PerpendicularLineConstraint, VerticalLineConstraint, HorizontalLineConstraint, angle} from './GeometricConstraintSolver.js';
 import {ReactSVGPanZoom} from 'react-svg-pan-zoom';
+// import {svgImport} from "./svgImport.js";
 
 var c = require('cassowary');
 
@@ -39,6 +39,7 @@ const distance = (p1, p2) => {
 }
 
 const functionGetAngle = (p1, p2) => {return Math.atan2(p2.y - p1.y, p2.x - p1.x);}
+
 //----------end of helper functions----------
 
 class DrawArea extends React.Component {
@@ -66,11 +67,11 @@ class DrawArea extends React.Component {
       workpieceSize: {x:500, y:500},
       clipboard: [],
       firstPolyline: undefined,
-      displayLengths: true,
       rotation: undefined,
       translation: undefined,
       scaleFactor: undefined,
       displayTransformations: false,
+      displayLengths: "selected",
 
       solverPoints: [], //holds array of c.Point objects
       //file: undefined,
@@ -724,48 +725,12 @@ class DrawArea extends React.Component {
 
 
   test() {
-    //testing
-    let selected = this.state.selected;
-    let sPoints = this.state.selectedPoints;
-    let p = sPoints.length;
-    let lines = this.state.selectedLines;
-    let l = lines.length;
-
-    // console.log("selected", selected);
-    // console.log("lines", lines);
-    // console.log("points", sPoints);
-
-    if (p >= 2) {
-      let c = CoincidentConstraint(sPoints[p-1], sPoints[p-2]);
-      console.log(c);
-    }
-
-    if (l >= 2) {
-      console.log("ready to roll")
-
-      let a = angle(lines[l-1], lines[l-2]) /(2*Math.PI) * 360; //in degrees
-      if (a < 0) { a = 180 + a};
-      //if (a === 0) {a = 90};
-      console.log(a);
-    }
-    //end of testing
   }
 
   makeCoincident() { //assumes selected is a point
     let points = this.state.selectedPoints;
     let pl = points.length;
     let lastPoint = points[pl-1];
-
-    // if (pl === 2) {
-    //   //console.log("coincident!")
-    //   var eq = new c.Equation(points[0].x, new c.Expression(points[1].x));
-    //   var eq2 = new c.Equation(points[0].y, new c.Expression(points[1].y));
-    //
-    //   //constraints.push(eq).push(eq2)
-    //
-    //   this.solver.addConstraint(eq)
-    //              .addConstraint(eq2)
-    // }
 
     points.slice(0, pl-1).forEach(point => {
       var eq = new c.Equation(lastPoint.x, new c.Expression(point.x));
@@ -802,66 +767,66 @@ class DrawArea extends React.Component {
     this.setState({});
   }
 
-  setDistance(e, solver) {
-    var expr = function(a, b) {
-      return new c.Expression(a, b);
-    }
-
-    c.Expression.prototype.multiply = function(x) {
-      if (typeof x == 'number') {
-        return (this.clone()).multiplyMe(x);
-
-      } else if (x instanceof c.Variable) {
-        return this.clone().addVariable(x, 1);
-      } else if (x instanceof c.Expression) {
-        return this.clone().addExpression(x, 1);
-      } else {
-        if (this.isConstant) {
-          return x.times(this.constant);
-        } else if (x.isConstant) {
-          return this.times(x.constant);
-        } else {
-          throw new c.NonExpression();
-        }
-      }
-    };
-
-    var constant = function(val) {
-      var v = new c.Variable({ value : val });
-      v.isConstant = true;
-      return v;
-    }
-
-    // helper function for creating "point-point distance" constraints
-    var distance = function(p1, p2) {
-
-      var x = p1.x.value - p2.x.value;
-      var y = p1.y.value - p2.y.value;
-      var distanceSquared = x**2 + y**2;
-      console.log("distance", distanceSquared);
-
-      var dx = expr(p1.x).minus(p2.x);
-      var dy = expr(p1.y).minus(p2.y);
-
-      var vardist = dx.multiply(dx).plus(dy.multiply(dy));
-
-      var eq = new c.Equation(vardist, -distanceSquared);
-      solver.addConstraint(eq);
-
-      console.log(eq.toString())
-    };
-
-    let points = this.state.selectedPoints;
-    let pl = points.length;
-
-
-    if (pl === 2) {
-      //console.log("coincident!")
-      distance(points[0], points[1])
-    }
-    //re-render
-    this.setState({});
-  }
+  // setDistance(e, solver) {
+  //   var expr = function(a, b) {
+  //     return new c.Expression(a, b);
+  //   }
+  //
+  //   c.Expression.prototype.multiply = function(x) {
+  //     if (typeof x == 'number') {
+  //       return (this.clone()).multiplyMe(x);
+  //
+  //     } else if (x instanceof c.Variable) {
+  //       return this.clone().addVariable(x, 1);
+  //     } else if (x instanceof c.Expression) {
+  //       return this.clone().addExpression(x, 1);
+  //     } else {
+  //       if (this.isConstant) {
+  //         return x.times(this.constant);
+  //       } else if (x.isConstant) {
+  //         return this.times(x.constant);
+  //       } else {
+  //         throw new c.NonExpression();
+  //       }
+  //     }
+  //   };
+  //
+  //   var constant = function(val) {
+  //     var v = new c.Variable({ value : val });
+  //     v.isConstant = true;
+  //     return v;
+  //   }
+  //
+  //   // helper function for creating "point-point distance" constraints
+  //   var distance = function(p1, p2) {
+  //
+  //     var x = p1.x.value - p2.x.value;
+  //     var y = p1.y.value - p2.y.value;
+  //     var distanceSquared = x**2 + y**2;
+  //     console.log("distance", distanceSquared);
+  //
+  //     var dx = expr(p1.x).minus(p2.x);
+  //     var dy = expr(p1.y).minus(p2.y);
+  //
+  //     var vardist = dx.multiply(dx).plus(dy.multiply(dy));
+  //
+  //     var eq = new c.Equation(vardist, -distanceSquared);
+  //     solver.addConstraint(eq);
+  //
+  //     console.log(eq.toString())
+  //   };
+  //
+  //   let points = this.state.selectedPoints;
+  //   let pl = points.length;
+  //
+  //
+  //   if (pl === 2) {
+  //     //console.log("coincident!")
+  //     distance(points[0], points[1])
+  //   }
+  //   //re-render
+  //   this.setState({});
+  // }
 
   makeVertical() { //sets all selected lines to be vertical
     this.state.shapes.forEach(shape => {
@@ -931,8 +896,6 @@ class DrawArea extends React.Component {
 
   }
 
-
-
   makeAngleConstraint(line, ratio, inverse) { //TODO: MAKE THIS WORK FOR VERTICAL LINES
     if (inverse) {
       var exp1 = new c.Expression(line.p1_.y).times(ratio);
@@ -957,62 +920,6 @@ class DrawArea extends React.Component {
   }
 
 //------------------------------------------------
-
-  // invert(axis) {
-  //   let points = [];
-  //
-  //   this.state.shapes.forEach(shape => {
-  //     let newShape = newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
-  //
-  //     newShapes.push(newShape);
-  //
-  //     if (shape.selected) {
-  //       //points = (shape.shape_ === "line") ? points.concat(shape.points()) : points.concat(shape.points());
-  //       points = points.concat(shape.toLine());
-  //     }
-  //   })
-  //
-  //   let averageX = points.length > 1 ? points.reduce(functionAverageX) : undefined;
-  //   let averageY = points.length > 1 ? points.reduce(functionAverageY) : undefined;
-  //
-  //   let pivotPoint = {x:averageX, y:averageY}
-  //   //console.log(pivotPoint);
-  //
-  //   let newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
-  //
-  //   let newPoints = newShape.toLine().map(shapePoint => { //TODO: fix for lines to points()
-  //
-  //     let distanceToPivot = distance(shapePoint, pivot);
-  //     let angleWithPivot = functionGetAngle(shapePoint, pivot);
-  //     let delta = angleWithPivot + angle + Math.PI;
-  //
-  //     let newPoint = {x:pivot.x+Math.cos(delta)*distanceToPivot, y:pivot.y+Math.sin(delta)*distanceToPivot};
-  //     //console.log(angleWithPivot);
-  //
-  //     //let newPoint = {x:100, y:100};
-  //     return newPoint;
-  //   })
-  //
-  //   if (shape.shape_ === "freehand") {
-  //     newShape.points(newPoints);
-  //   } else {
-  //     newShape.pointsToCPoints(newPoints, this.solver);
-  //   }
-  //
-  //   return newShape;
-  //
-  //   let unselectedShapes = [];
-  //   this.state.shapes.forEach(shape => {
-  //     if (shape.selected === false) {
-  //       unselectedShapes.push(shape);
-  //     }
-  //   })
-  //   let allShapes = this.state.newShapes.concat(unselectedShapes);
-  //
-  //   this.setState( {
-  //     shapes: allShapes
-  //   });
-  // }
 
   copy(e) { //TODO: doesnt work with cPoints
     let newClipboard = [];
@@ -1138,7 +1045,7 @@ class DrawArea extends React.Component {
 
     var self = this;
     //console.log(this.state)
-    let stateLoaded = (stateOfInterest) => {
+    const stateLoaded = (stateOfInterest) => {
       if (stateOfInterest.length === 1) {
         let oldState = JSON.parse(stateOfInterest[0]);
         let state = this.state;
@@ -1160,7 +1067,17 @@ class DrawArea extends React.Component {
               break;
           }
 
+
           newShape = Object.assign( Object.create( Object.getPrototypeOf(newShape)), oldShape); //this is so we maintain class methods
+
+          console.log("points", newShape.p1_._x, newShape.p2_._x)
+          if (newShape.shape_ === "line") {
+            newShape.p1_ = new c.Point(newShape.p1_._x.value, newShape.p1_._y.value);
+            newShape.p2_ = new c.Point(newShape.p2_._x.value, newShape.p2_._y.value);
+
+            this.solver.addPointStays([newShape.p1_, newShape.p2_]);
+          };
+
           return newShape
         })
 
@@ -1183,8 +1100,16 @@ class DrawArea extends React.Component {
           dragStart: undefined,
           onDragEndCallbacks: [],
           mouseDragged: false,
+          interLineConstraints: [],
           svgMouse: undefined,
-          workpieceSize: {x:500, y:500},
+          workpieceSize: oldState.workpieceSize,
+          clipboard: [],
+          firstPolyline: undefined,
+          displayLengths: "selected",
+          rotation: undefined,
+          translation: undefined,
+          scaleFactor: undefined,
+          displayTransformations: false,
 
           solverPoints: [], //holds array of c.Point objects
           //file: undefined,
@@ -1233,33 +1158,20 @@ class DrawArea extends React.Component {
     }
   }
 
-  handleLengthCheckbox(e) {
-    let newState = !this.state.displayLengths;
+  handleDropdownDisplayMenu(e) {
+    var e = document.getElementById("handleDropdownDisplayMenu");
+    var value = e.options[e.selectedIndex].value;
+    var text = e.options[e.selectedIndex].text;
 
-    this.setState({ displayLengths : newState });
-  }
-
-  handleTransformCheckbox(e) {
-    let newState = !this.state.displayTransformations;
-
-    this.setState({ displayTransformations : newState });
-  }
-
-  constraintUpdate() {
-    let changed = false;
-    this.state.constraints.forEach((constraint) => {
-      changed = changed || constraint.satisfy();
-    });
-
-    if (changed) {
-      this.setState({}); //re-render
-    }
+    this.setState({displayLengths:value})
   }
 
 // hotkeys
   handleKeyPress(e) {
     let code = (e.keyCode ? e.keyCode : e.which);
     console.log(code);
+    console.log(e);
+
     let cmdDown = e.metaKey;
 
     let oldShapes = this.state.shapes;
@@ -1397,7 +1309,7 @@ class DrawArea extends React.Component {
         pointer = "default";
     }
 
-    let width = 500;
+    let width = 700;
     let height = 500;
 
     let drawAreaStyle = {
@@ -1406,6 +1318,7 @@ class DrawArea extends React.Component {
       border: "1px solid black",
       float: "left",
       cursor: pointer,
+      outline: "none",
     }
 
     let activeButtonStyle = {
@@ -1472,6 +1385,20 @@ class DrawArea extends React.Component {
       verticalAlign: "middle",
     }
 
+    let toolbarStyle = {
+      // float:"left",
+      listStyleType: "none",
+      margin: "0px 0px",
+      padding: 4,
+      lineHeight: 1.5,
+      position: "fixed",
+      right: 0,
+      overflow: "scroll",
+      height:"95%",
+      width:"30%",
+      background:"white",
+    }
+
     let tool;
     switch (this.state.tool) {
       case "PAN":
@@ -1490,13 +1417,13 @@ class DrawArea extends React.Component {
 
     return (
       <div
-        onKeyDown={(e) => this.handleKeyPress(e)}
-        tabIndex="0"
         style={{
           outline: "none",
         }}
       >
         <div
+          onKeyDown={(e) => this.handleKeyPress(e)}
+          tabIndex="0"
           style={drawAreaStyle}
           ref="drawArea"
           onMouseDown={this.handleMouseDown}
@@ -1511,98 +1438,96 @@ class DrawArea extends React.Component {
             miniaturePosition={"left"}>
 
             <svg width={this.state.workpieceSize.x} height={this.state.workpieceSize.y}>
-              {this.state.shapes.map((shape,index) => shape.svgRender(`shapes:${index}`, this.state.displayLengths))};
-              {this.state.newShapes.map((shape, index) => shape.svgRender(`newShapes:${index}`, this.state.displayLengths))}
+              {this.state.shapes.map((shape,index) => shape.svgRender(`shapes:${index}`, this.state.displayLengths === "selected", this.state.displayLengths === "always"))};
+              {this.state.newShapes.map((shape, index) => shape.svgRender(`newShapes:${index}`, this.state.displayLengths === "selected", this.state.displayLengths === "always"))}
             </svg>
 
 
           </ReactSVGPanZoom>
 
         </div>
+        <img src={"box.svg"}/>
 
-        <table style={{float:"left"}}>
-          <tbody>
-            <tr><td><b>Tools</b></td></tr>
-            <tr><td><button style={this.state.tool === "FREEHAND" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("FREEHAND")}>Freehand</button></td></tr>
-            <tr><td><button style={this.state.tool === "RECTANGLE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("RECTANGLE")}>Rectangle</button></td></tr>
-            <tr><td><button style={this.state.tool === "POLYLINE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("POLYLINE")}>Polyline</button></td></tr>
-            <tr><td><button style={this.state.tool === "BEZIER" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("BEZIER")}>TODO: Bezier</button></td></tr>
-            <tr><td><button style={this.state.tool === "SELECT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SELECT")}>Select</button></td></tr>
-            <tr><td>Direct Transform</td></tr>
-            <tr><td><button style={this.state.tool === "MOVE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("MOVE")}>Move</button>{this.state.translation ? `X: ${this.state.translation.x} Y: ${this.state.translation.y}` : null}</td></tr>
-            <tr><td><button style={this.state.tool === "ROTATE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ROTATE")}>Rotate</button>{this.state.rotation ? `Angle: ${this.state.rotation}` : null} {this.state.rotation && <sup>o</sup>}</td></tr>
-            <tr><td><button style={this.state.tool === "SCALE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SCALE")}>Scale</button>{this.state.scaleFactor ? `Factor: ${this.state.scaleFactor}` : null}</td></tr>
-            <tr><td>View Tools</td></tr>
-            <tr><td><button style={this.state.tool === "PAN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("PAN")}>Pan</button></td></tr>
-            <tr><td>
-              <button style={this.state.tool === "ZOOMIN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMIN")}>Zoom In</button>
-              <button style={this.state.tool === "ZOOMOUT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMOUT")}>Zoom Out</button>
-            </td></tr>
-            <tr><td>Display Lengths: <input id="checkBox" type="checkbox" checked={this.state.displayLengths} onChange={(e) => this.handleLengthCheckbox(e)}/></td></tr>
-            <tr><td>Display Transformations: <input id="checkBox" type="checkbox" checked={this.state.displayTransformations} onChange={(e) => this.handleTransformCheckbox(e)}/></td></tr>
-            <tr><td>Other</td></tr>
-            <tr><td><button style={this.state.tool === undefined ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickNoTool(e)}>No Tool</button></td></tr>
-            <tr><td><b>Constraints</b></td></tr>
-            <tr>
-              <td>
-                <button style={defaultButtonStyle} onClick={(e) => this.makeHorizontal(e)}>Horizontal</button>
-                <button style={defaultButtonStyle} onClick={(e) => this.makeVertical(e)}>Vertical</button>
-                <button style={defaultButtonStyle} onClick={(e) => this.makeCoincident(e)}>Coincident</button>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <button style={defaultButtonStyle} onClick={(e) => this.setDistance(e, this.solver)}>TODO: Distance</button>
-                <button style={defaultButtonStyle} onClick={(e) => {}}>TODO: Angle</button>
-                <button style={defaultButtonStyle} onClick={(e) => this.test(e)}>TODO: Equal</button>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <button style={defaultButtonStyle} onClick={(e) => this.makeParallel(e)}>Parallel</button>
-                <button style={defaultButtonStyle} onClick={(e) => this.makePerpendicular(e)}>Perpendicular</button>
-                <button style={defaultButtonStyle} onClick={(e) => this.makeFixed(e)}>Fixed</button>
-              </td>
-            </tr>
-            <tr><td><b>File</b></td></tr>
-            <tr><td>
-              <form>
-                <div>
-                  <button style={downloadButtonStyle} onClick={(e) => this.setWorkpieceSize(e)}>Set Workpiece Size</button>
-                  <label>width: </label>
-                  <input type="text" id="width" name="width" style={{width: "30px"}}/>
-                  <label>height: </label>
-                  <input type="text" id="height" name="height" style={{width: "30px"}}/>
-                </div>
-              </form>
-            </td></tr>
-            <tr><td>
-              <form>
-                <div>
-                  <button style={downloadButtonStyle} onClick={(e) => this.handleDownload(e)}>Download SVG</button>
-                  <label>name: </label>
-                  <input type="text" id="downloadName" name="downloadName" style={{width: "70px"}}/>
-                </div>
-              </form>
-            </td></tr>
-            <tr><td>
-              <form>
-                <div>
-                  <button style={downloadButtonStyle} onClick={(e) => this.handleSave(e)}>Save</button>
-                  <label>name: </label>
-                  <input type="text" id="saveName" name="saveName" style={{width: "70px"}}/>
-                </div>
-              </form>
-            </td></tr>
-            <tr><td><div style={downloadButtonStyle}>TODO: Upload: <input type="file" name="uploadedFile" onChange={(e) => this.handleUpload(e)}/> </div></td></tr>
-            <tr><td><a href="http://fabmodules.org/" target="_blank" style={downloadButtonStyle}>fab modules</a></td></tr>
-          </tbody>
-        </table>
+        <ul style={toolbarStyle}>
+          <li><b>Tools</b></li>
+          <li><button style={this.state.tool === "FREEHAND" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("FREEHAND")}>Freehand</button></li>
+          <li><button style={this.state.tool === "RECTANGLE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("RECTANGLE")}>Rectangle</button></li>
+          <li><button style={this.state.tool === "POLYLINE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("POLYLINE")}>Polyline</button></li>
+          <li><button style={this.state.tool === "BEZIER" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("BEZIER")}>TODO: Bezier</button></li>
+          <li><button style={this.state.tool === "SELECT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SELECT")}>Select</button></li>
+          <li><button style={this.state.tool === undefined ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickNoTool(e)}>No Tool</button></li>
+          <li style={{fontSize:14}}>Direct Transform</li>
+          <li><button style={this.state.tool === "MOVE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("MOVE")}>Move</button>{this.state.translation ? `X: ${this.state.translation.x} Y: ${this.state.translation.y}` : null}</li>
+          <li><button style={this.state.tool === "ROTATE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ROTATE")}>Rotate</button>{this.state.rotation ? `Angle: ${this.state.rotation}` : null} {this.state.rotation && <sup>o</sup>}</li>
+          <li><button style={this.state.tool === "SCALE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SCALE")}>Scale</button>{this.state.scaleFactor ? `Factor: ${this.state.scaleFactor}` : null}</li>
+          <li style={{fontSize:14}}>View Tools</li>
+          <li><button style={this.state.tool === "PAN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("PAN")}>Pan</button></li>
+          <li>
+            <button style={this.state.tool === "ZOOMIN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMIN")}>Zoom In</button>
+            <button style={this.state.tool === "ZOOMOUT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMOUT")}>Zoom Out</button>
+          </li>
+          <li style={{fontSize:14}}>
+            Display Lengths:
+            <select id="handleDropdownDisplayMenu" defaultValue={"selected"} onChange={(e) => this.handleDropdownDisplayMenu(e)}>
+              <option value="none">None</option>
+              <option value="selected">Selected</option>
+              <option value="always">Always</option>
+            </select>
+          </li>
+          <li style={{fontSize:14}}>Display Transformations: <input id="checkBox" type="checkbox" checked={this.state.displayTransformations} onChange={(e) => this.handleTransformCheckbox(e)}/></li>
+          <li><b>Constraints</b></li>
+          <li>
+            <button style={defaultButtonStyle} onClick={(e) => this.makeHorizontal(e)}>Horizontal</button>
+            <button style={defaultButtonStyle} onClick={(e) => this.makeVertical(e)}>Vertical</button>
+            <button style={defaultButtonStyle} onClick={(e) => this.makeCoincident(e)}>Coincident</button>
+          </li>
+          <li>
+            <button style={defaultButtonStyle} onClick={(e) => this.setDistance(e, this.solver)}>TODO: Distance</button>
+            <button style={defaultButtonStyle} onClick={(e) => {}}>TODO: Angle</button>
+            <button style={defaultButtonStyle} onClick={(e) => this.test(e)}>TODO: Equal</button>
+          </li>
+          <li>
+            <button style={defaultButtonStyle} onClick={(e) => this.makeParallel(e)}>Parallel</button>
+            <button style={defaultButtonStyle} onClick={(e) => this.makePerpendicular(e)}>Perpendicular</button>
+            <button style={defaultButtonStyle} onClick={(e) => this.makeFixed(e)}>Fixed</button>
+          </li>
+          <li><b>File</b></li>
+          <li>
+            <form>
+              <div>
+                <button style={downloadButtonStyle} onClick={(e) => this.setWorkpieceSize(e)}>Set Workpiece Size</button>
+                <label>width: </label>
+                <input type="text" id="width" name="width" style={{fontSize:14, width: "30px"}}/>
+                <label>height: </label>
+                <input type="text" id="height" name="height" style={{fontSize:14, width: "30px"}}/>
+              </div>
+            </form>
+          </li>
+          <li>
+            <form>
+              <div>
+                <button style={downloadButtonStyle} onClick={(e) => this.handleDownload(e)}>Download SVG</button>
+                <label>name: </label>
+                <input type="text" id="downloadName" name="downloadName" style={{fontSize:14, width: "70px"}}/>
+              </div>
+            </form>
+          </li>
+          <li>
+            <form>
+              <div>
+                <button style={downloadButtonStyle} onClick={(e) => this.handleSave(e)}>Save</button>
+                <label>name: </label>
+                <input type="text" id="saveName" name="saveName" style={{fontSize:14, width: "70px"}}/>
+              </div>
+            </form>
+          </li>
+          <li><div style={downloadButtonStyle}>Upload: <input type="file" name="uploadedFile" onChange={(e) => this.handleUpload(e)}/> </div></li>
+          <li><a href="http://fabmodules.org/" target="_blank" style={downloadButtonStyle}>fab modules</a></li>
+        </ul>
       </div>
     );
   }
 }
-
 
 class App extends Component {
   render() {

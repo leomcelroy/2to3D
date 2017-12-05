@@ -9,13 +9,10 @@ class AbstractLine {
     this.p1_ = new c.Point(startingPoint.x, startingPoint.y);
     this.p2_ = new c.Point(startingPoint.x, startingPoint.y);
     this.pointSelectDistance_ = 7; //todo: setter / getter
-    this.lineSelectDistance_ = 1;
-    this.objectSelectDistance_ = 1;
-    //this.length_ = Math.sqrt(distanceSquared(this.p1_, this.p2_));
+    this.lineSelectDistance_ = 0.03;
     this.selected = false;
     this.p1_selected = false;
     this.p2_selected = false;
-    //this.points_ = [];
 
     solver.addPointStays([this.p1_, this.p2_]);
   }
@@ -137,17 +134,14 @@ class Line extends AbstractLine {
 
   toLines() { return [this.toLine()] };
 
-  distance() {
+  length() {
     let p1 = this.toLine()[0];
     let p2 = this.toLine()[1];
 
-    let distance = distanceSquared(p1, p2)**(1/2);
+    let length = distanceSquared(p1, p2)**(1/2);
 
-    return distance;
+    return length;
   }
-
-  closed() {return false};
-
 
   selectedObjectAt(point) {
     if (distanceSquared(point, cPointToPoint(this.p1_)) < this.pointSelectDistance_**2) {
@@ -165,7 +159,7 @@ class Line extends AbstractLine {
         this.p2_selected = true;
         return () => {/*do nothing*/};
       }
-    } else if (onLine(point, cPointToPoint(this.p1_), cPointToPoint(this.p2_), this.pointSelectDistance_)) {
+    } else if (onLine(point, cPointToPoint(this.p1_), cPointToPoint(this.p2_), this.lineSelectDistance_)) {
       if (this.selected) {
         return () => {this.selected = this.p1_selected = this.p2_selected = false};
       } else {
@@ -180,31 +174,18 @@ class Line extends AbstractLine {
     return"M " + this.toLine().map(p => `${p['x']} ${p['y']}`);
   }
 
-  //updateLength() { this.length_ = Math.sqrt(distanceSquared(this.p1_, this.p2_)); }
-
-  // length(len) {
-  //   //TODO: update length when given
-  //   return this.length_;
-  // }
-
-
-  angle(a) {
-    console.log("TODO: REMOVE");
-    //console.log(this.length);
-    if (a === undefined) {
-      return Math.atan2(this.p2_.y - this.p1_.y, this.p2_.x - this.p1_.x);
-    }
-    // this.p2_.y = this.p1_.y + Math.sin(a) * this.length();
-    // this.p2_.x = this.p1_.x + Math.cos(a) * this.length();
+  select(booleanValue) {
+    return this.selected = (booleanValue === undefined) ? !this.selected : booleanValue;
   }
 
   shapeContains(point) {
-    return onLine(point, cPointToPoint(this.p1_), cPointToPoint(this.p2_), this.objectSelectDistance_);
+    return onLine(point, cPointToPoint(this.p1_), cPointToPoint(this.p2_), this.lineSelectDistance_);
   }
 
-  rendersPath() {
-    return false;
-  }
+  svgRender(index, lengths = true, alwaysLengths = false) {
+    let circle1Color = this.p1_selected ? "blue" : "black";
+    let circle2Color = this.p2_selected ? "blue" : "black";
+    let lineColor = this.selected ? "blue" : "black";
 
 
 }
@@ -349,7 +330,6 @@ class Freehand {
   constructor(point) {
     this.shape_ = 'freehand';
     this.points_ = [];
-    this.pointSelectDistance_ = 5; //todo: setter / getter
     this.lineSelectDistance_ = 2;
     this.selected = false;
 
@@ -358,8 +338,6 @@ class Freehand {
       this.points_.push(point);
     }
   }
-
-  closed() {return true};
 
   lastPoint(p) {  //if arg is specified, sets the last point of the rectangle and returns this
 
@@ -401,10 +379,6 @@ class Freehand {
     return contains;
   }
 
-  rendersPath() {
-    return false;
-  }
-
   svgRender() {
     let lineColor = this.selected ? "blue" : "black";
 
@@ -429,9 +403,10 @@ class Freehand {
 //-------------------------------helper functions-------------------------------
 
 function onLine(point, p1, p2, buffer) {
-  let d1 = distanceSquared(point, p1);
-  let d2 = distanceSquared(point, p2);
-  return Math.sqrt(d1) + Math.sqrt(d2) < Math.sqrt(distanceSquared(p1, p2)) + buffer
+  let d1 = Math.sqrt(distanceSquared(point, p1));
+  let d2 = Math.sqrt(distanceSquared(point, p2));
+
+  return d1 + d2 < Math.sqrt(distanceSquared(p1, p2)) + buffer
 }
 
 function distanceSquared(p1, p2) {
