@@ -69,7 +69,7 @@ class DrawArea extends React.Component {
       rotation: undefined,
       translation: undefined,
       scaleFactor: undefined,
-      displayTransformations: false,
+      displayTransformations: true,
       displayLengths: "selected",
 
       solverPoints: [], //holds array of c.Point objects
@@ -1109,7 +1109,7 @@ class DrawArea extends React.Component {
           rotation: undefined,
           translation: undefined,
           scaleFactor: undefined,
-          displayTransformations: false,
+          displayTransformations: true,
 
           solverPoints: [], //holds array of c.Point objects
           //file: undefined,
@@ -1459,13 +1459,13 @@ class DrawArea extends React.Component {
           <li><button style={this.state.tool === "FREEHAND" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("FREEHAND")}>Freehand</button></li>
           <li><button style={this.state.tool === "RECTANGLE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("RECTANGLE")}>Rectangle</button></li>
           <li><button style={this.state.tool === "POLYLINE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("POLYLINE")}>Polyline</button></li>
-          <li><button style={this.state.tool === "BEZIER" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("BEZIER")}>TODO: Bezier</button></li>
+          <li><button style={this.state.tool === "BEZIER" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("BEZIER")}>Bezier</button></li>
           <li><button style={this.state.tool === "SELECT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SELECT")}>Select</button></li>
           <li><button style={this.state.tool === undefined ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickNoTool(e)}>No Tool</button></li>
           <li style={{fontSize:14}}>Direct Transform</li>
-          <li><button style={this.state.tool === "MOVE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("MOVE")}>Move</button>{this.state.translation ? `X: ${this.state.translation.x} Y: ${this.state.translation.y}` : null}</li>
-          <li><button style={this.state.tool === "ROTATE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ROTATE")}>Rotate</button>{this.state.rotation ? `Angle: ${this.state.rotation}` : null} {this.state.rotation && <sup>o</sup>}</li>
-          <li><button style={this.state.tool === "SCALE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SCALE")}>Scale</button>{this.state.scaleFactor ? `Factor: ${this.state.scaleFactor}` : null}</li>
+          <li style={{fontSize:14}}><button style={this.state.tool === "MOVE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("MOVE")}>Move</button>{this.state.translation ? `X: ${this.state.translation.x} Y: ${this.state.translation.y}` : null}</li>
+          <li style={{fontSize:14}}><button style={this.state.tool === "ROTATE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ROTATE")}>Rotate</button>{this.state.rotation ? `Angle: ${this.state.rotation}` : null} {this.state.rotation && <sup>o</sup>}</li>
+          <li style={{fontSize:14}}><button style={this.state.tool === "SCALE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SCALE")}>Scale</button>{this.state.scaleFactor ? `Factor: ${this.state.scaleFactor}` : null}</li>
           <li style={{fontSize:14}}>View Tools</li>
           <li><button style={this.state.tool === "PAN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("PAN")}>Pan</button></li>
           <li>
@@ -1485,12 +1485,10 @@ class DrawArea extends React.Component {
           <li>
             <button style={defaultButtonStyle} onClick={(e) => this.makeHorizontal(e)}>Horizontal</button>
             <button style={defaultButtonStyle} onClick={(e) => this.makeVertical(e)}>Vertical</button>
-            <button style={defaultButtonStyle} onClick={(e) => this.makeCoincident(e)}>Coincident</button>
           </li>
           <li>
-            <button style={defaultButtonStyle} onClick={(e) => this.setDistance(e, this.solver)}>TODO: Distance</button>
-            <button style={defaultButtonStyle} onClick={(e) => {}}>TODO: Angle</button>
-            <button style={defaultButtonStyle} onClick={(e) => this.test(e)}>TODO: Equal</button>
+            <button style={defaultButtonStyle} onClick={(e) => this.setDistance(e, this.solver)}>Distance</button>
+            <button style={defaultButtonStyle} onClick={(e) => this.makeCoincident(e)}>Coincident</button>
           </li>
           <li>
             <button style={defaultButtonStyle} onClick={(e) => this.makeParallel(e)}>Parallel</button>
@@ -1534,6 +1532,9 @@ class DrawArea extends React.Component {
     );
   }
 }
+
+// <button style={defaultButtonStyle} onClick={(e) => {}}>TODO: Angle</button>
+// <button style={defaultButtonStyle} onClick={(e) => this.test(e)}>TODO: Equal</button>
 
 class App extends Component {
   render() {
