@@ -59,11 +59,11 @@ class AbstractLine {
     return this.selected = (booleanValue === undefined) ? !this.selected : booleanValue;
   }
 
-  selectedAtAll() {
-    return (this.selected || this.p1_selected || this.p2_selected);
+  selectedAtAll(lengths, alwaysLengths) {
+    return ((this.selected || this.p1_selected || this.p2_selected) && lengths || alwaysLengths);
   }
 
-  svgRender(index, lengths = true) {
+  svgRender(index, lengths = true, alwaysLengths = false) {
       let points = this.points();
       let circleColors = this.getCircleColors();
       for (var i = 0; i < points.length; i++) {
@@ -81,7 +81,7 @@ class AbstractLine {
 
       const pathData = this.getPathData();
 
-      let selectedAtAll = this.selectedAtAll();
+      let selectedAtAll = this.selectedAtAll(lengths, alwaysLengths);
 
       let textStyle = {
         WebkitTouchCallout: "none", /* iOS Safari */
@@ -95,7 +95,7 @@ class AbstractLine {
       return (
         <g>
           <path d={pathData} style={style} id={`${index}`}/>
-          {(selectedAtAll) ? <text dy={"-8"}><textPath href={`#${index}`} startOffset={"43%"} style={textStyle}>{Math.round(this.distance()*1000)/1000}</textPath></text> : null}
+          {(selectedAtAll) ? <text dy={"-8"}><textPath href={`#${index}`} startOffset={"43%"} style={textStyle}>{Math.round(this.length()*1000)/1000}</textPath></text> : null}
           {points.map(p => <circle cx={`${p['x']}`} cy={`${p['y']}`} r="5" fill={p.color}/>)}
         </g>
       )
@@ -181,12 +181,6 @@ class Line extends AbstractLine {
   shapeContains(point) {
     return onLine(point, cPointToPoint(this.p1_), cPointToPoint(this.p2_), this.lineSelectDistance_);
   }
-
-  svgRender(index, lengths = true, alwaysLengths = false) {
-    let circle1Color = this.p1_selected ? "blue" : "black";
-    let circle2Color = this.p2_selected ? "blue" : "black";
-    let lineColor = this.selected ? "blue" : "black";
-
 
 }
 

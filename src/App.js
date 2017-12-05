@@ -165,8 +165,6 @@ class DrawArea extends React.Component {
             let eq = new c.Equation(oldLine.p2_.x, new c.Expression(line.p1_.x));
             let eq2 = new c.Equation(oldLine.p2_.y, new c.Expression(line.p1_.y));
 
-
-
             this.solver.addConstraint(eq)
                        .addConstraint(eq2);
 
@@ -184,6 +182,7 @@ class DrawArea extends React.Component {
           }
         } else {
           let line = new Shape(point, this.solver);
+          console.log(line);
 
             line.addEditVars(this.solver);
             this.solver.beginEdit();
