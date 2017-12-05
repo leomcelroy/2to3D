@@ -4,6 +4,7 @@ import {ReactSVGPanZoom} from 'react-svg-pan-zoom';
 // import {svgImport} from "./svgImport.js";
 
 var c = require('cassowary');
+const EPS = 0.1;
 
 //----------helper functions----------
 const functionAverageX = (total, amount, index, array) => {
@@ -611,9 +612,13 @@ class DrawArea extends React.Component {
       // console.log(sPoint);
       // console.log(this.solver._editVarList);
 
-      this.solver.suggestValue(sPoint.x, sPoint.x.value + dx)
-                 .suggestValue(sPoint.y, sPoint.y.value + dy)
-                 .resolve();
+      try {
+        this.solver.suggestValue(sPoint.x, sPoint.x.value + dx)
+                   .suggestValue(sPoint.y, sPoint.y.value + dy)
+                   .resolve();
+      } catch(e) {
+        /*do nothing*/
+      }
     });
 
     this.setState({
@@ -764,6 +769,69 @@ class DrawArea extends React.Component {
     });
     //re-render
     this.setState({});
+  }
+
+  setDistance() {
+    let dist = 50; //TODO: ACTUALLY GET distance from textbox
+    this.state.shapes.forEach(shape => {
+      if (shape.shape_ === 'line' && shape.selected) {
+        this.setDistanceConstraint(dist, shape);
+      }
+    });
+  }
+
+  setDistanceConstraint(distance, line) {
+    let numsteps = 4;
+    for (var angle = 0; angle <= 0.785398 /*45 deg*/; angle += (0.785398 / numsteps)) {
+      this.setManhattanDistanceConstraint(distance, angle, line);
+    }
+  }
+
+  setManhattanDistanceConstraint(distance, angle, line) {
+    let p1prime = this.getRotatedPoint(line.p1_, angle);
+    let p2prime = this.getRotatedPoint(line.p2_, angle);
+
+    //four LEQ constraints from absolute value constraints
+    let ineq1 = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p1prime.y).minus(p2prime.y), c.LEQ, distance + EPS);
+    let ineq2 = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p1prime.y).minus(p2prime.y), c.LEQ, distance + EPS);
+    let ineq3 = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p2prime.y).minus(p1prime.y), c.LEQ, distance + EPS);
+    let ineq4 = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p2prime.y).minus(p1prime.y), c.LEQ, distance + EPS);
+    this.solver.addConstraint(ineq1).addConstraint(ineq2).addConstraint(ineq3).addConstraint(ineq4);
+
+    // //add LEQ constraint (this will ahve to be updated)
+    // let ineq5 = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p1prime.y).minus(p2prime.y), c.GEQ, distance - EPS, c.Strength.strong);
+    // let ineq6 = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p1prime.y).minus(p2prime.y), c.GEQ, distance - EPS, c.Strength.strong);
+    // let ineq7 = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p2prime.y).minus(p1prime.y), c.GEQ, distance - EPS, c.Strength.strong);
+    // let ineq8 = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p2prime.y).minus(p1prime.y), c.GEQ, distance - EPS, c.Strength.strong);
+    // this.solver.addConstraint(ineq5).addConstraint(ineq6).addConstraint(ineq7).addConstraint(ineq8);
+
+    var ineq;
+    if (p1prime.x.value >= p2prime.x && p1prime.y >= p2prime.y) {
+      ineq = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p1prime.y).minus(p2prime.y), c.GEQ, distance - EPS, c.Strength.medium);
+    } else if (p2prime.x.value >= p1prime.x && p1prime.y >= p2prime.y) {
+      ineq = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p1prime.y).minus(p2prime.y), c.GEQ, distance - EPS, c.Strength.medium);
+    } else if (p1prime.x.value >= p2prime.x && p2prime.y >= p1prime.y) {
+      ineq = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p2prime.y).minus(p1prime.y), c.GEQ, distance - EPS, c.Strength.medium);
+    } else {
+      ineq = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p2prime.y).minus(p1prime.y), c.GEQ, distance - EPS, c.Strength.medium);
+    }
+    this.solver.addConstraint(ineq);
+  }
+
+  getRotatedPoint(cPoint, angle) {
+    let cos = Math.cos(angle);
+    let sin = Math.sin(angle);
+
+    let xcos = new c.Expression(cPoint.x).times(cos);
+    let ysin = new c.Expression(cPoint.y).times(sin);
+    let xprime = xcos.minus(ysin);
+
+    let xsin = new c.Expression(cPoint.x).times(sin);
+    let ycos = new c.Expression(cPoint.y).times(cos);
+    let yprime = xsin.plus(ycos);
+
+    return {'x': xprime, 'y': yprime};
+
   }
 
   // setDistance(e, solver) {
