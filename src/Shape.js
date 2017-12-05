@@ -280,9 +280,6 @@ function onLine(point, p1, p2, buffer) {
   let d1 = Math.sqrt(distanceSquared(point, p1));
   let d2 = Math.sqrt(distanceSquared(point, p2));
 
-  console.log("d1 d2", d1, d2)
-  console.log("d1 + d2", d1 + d2)
-  console.log("actual", Math.sqrt(distanceSquared(p1, p2)))
   return d1 + d2 < Math.sqrt(distanceSquared(p1, p2)) + buffer
 }
 
