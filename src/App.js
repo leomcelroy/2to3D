@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import {Line, Bezier, Freehand, box} from './Shape.js';
+import {Line, Bezier, Freehand} from './Shape.js';
 import {ReactSVGPanZoom} from 'react-svg-pan-zoom';
 
 var c = require('cassowary');
@@ -978,14 +978,13 @@ class DrawArea extends React.Component {
     filename = `${filename}.svg`;
 
     let shapeArray = this.state.shapes;
-    let lineArray = [];
-    shapeArray.forEach((shape) => {
-      lineArray = lineArray.concat(shape.toLines());
-    });
+
 
     //lineArray = lineArray.concat(this.state.lines);
 
-    let svgString = lineArray.map(line => `<path d="M ${line.map(p => `${p['x']} ${p['y']}`)}" stroke-linejoin="round" stroke-linecap="round" stroke-width="1px" stroke="black" fill="none"/>`);
+
+    let svgString = this.state.shapes.map(shape => `<path d="${shape.getPathData()}" stroke-linejoin="round" stroke-linecap="round" stroke-width="1px" stroke="black" fill="none"/>`);
+
 
     let text = `<svg
       width="${this.state.workpieceSize.x}"
@@ -1061,19 +1060,19 @@ class DrawArea extends React.Component {
               newShape = new Line({x:0,y:0}, this.solver);
               break;
             case "bezier":
-              newShape = new Bezier;
+              newShape = new Bezier({x:0,y:0}, this.solver);
               break;
           }
 
 
           newShape = Object.assign( Object.create( Object.getPrototypeOf(newShape)), oldShape); //this is so we maintain class methods
 
-          console.log("points", newShape.p1_._x, newShape.p2_._x)
-          if (newShape.shape_ === "line") {
+          // console.log("points", newShape.p1_._x, newShape.p2_._x)
+          if (newShape.shape_ === "line" || newShape.shape === "bezier") {
             newShape.p1_ = new c.Point(newShape.p1_._x.value, newShape.p1_._y.value);
             newShape.p2_ = new c.Point(newShape.p2_._x.value, newShape.p2_._y.value);
 
-            newShape.pointSelectDistance_ = 3;
+            newShape.pointSelectDistance_ = 5;
             newShape.lineSelectDistance_ = .04;
 
             this.solver.addPointStays([newShape.p1_, newShape.p2_]);
@@ -1188,6 +1187,7 @@ class DrawArea extends React.Component {
     switch (code) {
       case 13: //enter
         switch (this.state.tool) {
+          case "BEZIER":
           case "POLYLINE":
               this.solver.endEdit().resolve();
               lastShape.deselect();
@@ -1316,8 +1316,8 @@ class DrawArea extends React.Component {
         pointer = "default";
     }
 
-    let width = 700;
-    let height = 500;
+    let width = 980;
+    let height = 700;
 
     let drawAreaStyle = {
       width: width,
@@ -1402,7 +1402,7 @@ class DrawArea extends React.Component {
       right: 0,
       overflow: "scroll",
       height:"95%",
-      width:"30%",
+      width:300,
       background:"white",
     }
 
@@ -1447,7 +1447,7 @@ class DrawArea extends React.Component {
             <svg width={this.state.workpieceSize.x} height={this.state.workpieceSize.y}>
               {this.state.shapes.map((shape,index) => shape.svgRender(`shapes:${index}`, this.state.displayLengths === "selected", this.state.displayLengths === "always"))};
               {this.state.newShapes.map((shape, index) => shape.svgRender(`newShapes:${index}`, this.state.displayLengths === "selected", this.state.displayLengths === "always"))}
-              {box}
+              {/*box*/}
             </svg>
 
           </ReactSVGPanZoom>
