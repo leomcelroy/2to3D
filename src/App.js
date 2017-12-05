@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
-import {Line, Bezier, Freehand} from './Shape.js';
+import {Line, Bezier, Freehand, box} from './Shape.js';
 import {ReactSVGPanZoom} from 'react-svg-pan-zoom';
-// import {svgImport} from "./svgImport.js";
 
 var c = require('cassowary');
 
@@ -1082,6 +1081,9 @@ class DrawArea extends React.Component {
             newShape.p1_ = new c.Point(newShape.p1_._x.value, newShape.p1_._y.value);
             newShape.p2_ = new c.Point(newShape.p2_._x.value, newShape.p2_._y.value);
 
+            newShape.pointSelectDistance_ = 3;
+            newShape.lineSelectDistance_ = .04;
+
             this.solver.addPointStays([newShape.p1_, newShape.p2_]);
           };
 
@@ -1163,6 +1165,12 @@ class DrawArea extends React.Component {
         workpieceSize : {x:width, y:height}
       })
     }
+  }
+
+  handleTransformCheckbox(e) {
+    let newState = !this.state.displayTransformations;
+
+    this.setState({displayTransformations:newState})
   }
 
   handleDropdownDisplayMenu(e) {
@@ -1446,13 +1454,12 @@ class DrawArea extends React.Component {
             <svg width={this.state.workpieceSize.x} height={this.state.workpieceSize.y}>
               {this.state.shapes.map((shape,index) => shape.svgRender(`shapes:${index}`, this.state.displayLengths === "selected", this.state.displayLengths === "always"))};
               {this.state.newShapes.map((shape, index) => shape.svgRender(`newShapes:${index}`, this.state.displayLengths === "selected", this.state.displayLengths === "always"))}
+              {box}
             </svg>
-
 
           </ReactSVGPanZoom>
 
         </div>
-        <img src={"box.svg"}/>
 
         <ul style={toolbarStyle}>
           <li><b>Tools</b></li>
