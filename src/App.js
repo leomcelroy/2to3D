@@ -94,6 +94,8 @@ class DrawArea extends React.Component {
     }
     var point = this.relativeCoordinatesForEvent(mouseEvent);
     let oldShapes = this.state.shapes;
+    var Shape = Line; //used to switch between polyline and bezier;
+
 
     switch (this.state.tool) {
       case "FREEHAND":
@@ -108,6 +110,8 @@ class DrawArea extends React.Component {
             isDrawing: true,
         });
         break;
+      case "BEZIER":
+        Shape = Bezier; //turn on bezier drawing
       case "POLYLINE":
         if (this.state.isDrawing) {
           let firstLine = this.state.firstPolyline;
@@ -125,8 +129,15 @@ class DrawArea extends React.Component {
             let eq2 = new c.Equation(lastLine.p2_.y, new c.Expression(firstLine.p1_.y));
 
             this.solver.addConstraint(eq)
-                       .addConstraint(eq2)
-                       .solve();
+                       .addConstraint(eq2);
+
+            if (this.state.tool === 'BEZIER') {
+              let eqn = new c.Equation(firstLine.p1_.x, new c.Expression(firstLine.c1_.x).plus(lastLine.c2_.x).divide(2));
+              let eqn2 = new c.Equation(firstLine.p1_.y, new c.Expression(firstLine.c1_.y).plus(lastLine.c2_.y).divide(2));
+              this.solver.addConstraint(eqn).addConstraint(eqn2);
+            }
+
+            this.solver.solve();
 
             this.setState({
               isDrawing: false,
@@ -135,7 +146,7 @@ class DrawArea extends React.Component {
             //lastLine.deselect();
             this.solver.endEdit();
 
-            let line = new Line(point, this.solver);
+            let line = new Shape(point, this.solver);
             let oldLine = oldShapes[oldShapes.length - 1];
 
             //add coincident constraint
@@ -143,10 +154,8 @@ class DrawArea extends React.Component {
             // console.log("old y:", oldLine.p2_.y.value , "new y:",line.p1_.y.value);
 
 
-            this.solver
-              .addEditVar(line.p2_.x)
-              .addEditVar(line.p2_.y)
-              .beginEdit();
+            line.addEditVars(this.solver);
+            this.solver.beginEdit();
 
             line.p2_selected = true;
 
@@ -156,20 +165,26 @@ class DrawArea extends React.Component {
             let eq2 = new c.Equation(oldLine.p2_.y, new c.Expression(line.p1_.y));
 
             this.solver.addConstraint(eq)
-                       .addConstraint(eq2)
-                       .solve();
+                       .addConstraint(eq2);
+
+            if (this.state.tool === 'BEZIER') {
+               let eqn = new c.Equation(line.p1_.x, new c.Expression(line.c1_.x).plus(oldLine.c2_.x).divide(2));
+               let eqn2 = new c.Equation(line.p1_.y, new c.Expression(line.c1_.y).plus(oldLine.c2_.y).divide(2));
+                this.solver.addConstraint(eqn).addConstraint(eqn2);
+            }
+
+            this.solver.solve();
 
             this.setState({
               shapes: oldShapes,
             });
           }
         } else {
-          let line = new Line(point, this.solver);
+          let line = new Shape(point, this.solver);
+          console.log(line);
 
-            this.solver
-              .addEditVar(line.p2_.x)
-              .addEditVar(line.p2_.y)
-              .beginEdit();
+            line.addEditVars(this.solver);
+            this.solver.beginEdit();
 
             line.p2_selected = true;
 
@@ -232,27 +247,12 @@ class DrawArea extends React.Component {
         });
 
         break;
-      case "BEZIER":
-        //console.log(this.state.isDrawing);
-        //console.log(this.state.shapes);
-        if (this.state.isDrawing) {
-          this.setState({
-            isDrawing: false,
-          });
-        } else {
-          let bezier = new Bezier(point, point, point, point);
-          oldShapes.push(bezier);
-          this.setState({
-            shapes: oldShapes,
-            isDrawing: true,
-          });
-        }
-        break;
       case "SELECT":
         //click and drag
         let anySelected = false;
         this.state.shapes.forEach((shape) => {
           let callback = shape.selectedObjectAt(point);
+          console.log(callback);
           if (callback) {
             let oldCallbacks = this.state.onDragEndCallbacks;
             if (shape.shape_ !== "freehand") { //freehands shouldn't be dragged
@@ -267,7 +267,7 @@ class DrawArea extends React.Component {
 
         if (anySelected) {
           this.state.shapes.forEach(shape => {
-            if (shape.shape_ === 'line') {
+            if (shape.shape_ === 'line' || shape.shape_ === 'bezier') {
               selectedPoints = selectedPoints.concat(shape.selectedPoints());
             } else {
               if (shape.selectedObjectAt(point)) {
@@ -277,7 +277,7 @@ class DrawArea extends React.Component {
           });
         } else { //TODO: if dragged should create select box
           this.state.shapes.forEach(shape => {
-            if (shape.shape_ === 'line') {
+            if (shape.shape_ === 'line' || shape.shape_ === 'bezier') {
               shape.deselect();
             } else {
               shape.select(false);
@@ -509,12 +509,6 @@ class DrawArea extends React.Component {
     //let oldState = this.state.lines;
 
     switch (this.state.tool) {
-      case "BEZIER":
-        oldShapes[oldShapes.length -1].lastPoint(point); //update the last point of the polygon
-        this.setState({
-          shapes: oldShapes,
-        });
-        break;
       case "RECTANGLE":
         var lastLine = oldShapes[oldShapes.length - 1];
         this.solver
@@ -523,12 +517,10 @@ class DrawArea extends React.Component {
           .resolve();
         this.setState({});
         if (!this.state.isDrawing) {break;};
+      case "BEZIER":
       case "POLYLINE":
         var lastLine = oldShapes[oldShapes.length - 1];
-        this.solver
-          .suggestValue(lastLine.p2_.x, point.x)
-          .suggestValue(lastLine.p2_.y, point.y)
-          .resolve();
+        lastLine.drawToPoint(point, this.solver);
         this.setState({});
         break;
       case "FREEHAND":
@@ -859,7 +851,7 @@ class DrawArea extends React.Component {
     }
     let selectedLines = [];
     this.state.shapes.forEach(shape => {
-      if (shape.shape_ === 'line' && shape.selected) {
+      if ((shape.shape_ === 'line' || shape.shape_ === 'bezier') && shape.selected) {
         selectedLines.push(shape);
       }
     });
@@ -1207,6 +1199,7 @@ class DrawArea extends React.Component {
         break;
       case 27: //esc
         switch (this.state.tool) {
+          case "BEZIER":
           case "POLYLINE":
               this.solver.endEdit().resolve();
 
