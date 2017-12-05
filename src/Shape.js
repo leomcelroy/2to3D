@@ -31,6 +31,13 @@ class AbstractLine {
     solver
       .addEditVar(this.p2_.x)
       .addEditVar(this.p2_.y)
+
+      let constraint1 = new c.StayConstraint(this.p1_.x, c.Strength.medium);
+      let constraint2 = new c.StayConstraint(this.p1_.y, c.Strength.medium);
+      let constraint3 = new c.StayConstraint(this.p2_.x, c.Strength.medium);
+      let constraint4 = new c.StayConstraint(this.p2_.y, c.Strength.medium);
+
+      solver.addConstraint(constraint1).addConstraint(constraint2).addConstraint(constraint3).addConstraint(constraint4);
   }
 
   deselect() {
@@ -250,7 +257,7 @@ class Bezier extends AbstractLine {
       .addEditVar(this.c1_.x)
       .addEditVar(this.c1_.y)
       .addEditVar(this.c2_.x)
-      .addEditVar(this.c2_.y)
+      .addEditVar(this.c2_.y);
   }
 
   deselect() {

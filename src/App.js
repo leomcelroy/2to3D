@@ -129,8 +129,15 @@ class DrawArea extends React.Component {
             let eq2 = new c.Equation(lastLine.p2_.y, new c.Expression(firstLine.p1_.y));
 
             this.solver.addConstraint(eq)
-                       .addConstraint(eq2)
-                       .solve();
+                       .addConstraint(eq2);
+
+            if (this.state.tool === 'BEZIER') {
+              let eqn = new c.Equation(firstLine.p1_.x, new c.Expression(firstLine.c1_.x).plus(lastLine.c2_.x).divide(2));
+              let eqn2 = new c.Equation(firstLine.p1_.y, new c.Expression(firstLine.c1_.y).plus(lastLine.c2_.y).divide(2));
+              this.solver.addConstraint(eqn).addConstraint(eqn2);
+            }
+
+            this.solver.solve();
 
             this.setState({
               isDrawing: false,
@@ -157,9 +164,18 @@ class DrawArea extends React.Component {
             let eq = new c.Equation(oldLine.p2_.x, new c.Expression(line.p1_.x));
             let eq2 = new c.Equation(oldLine.p2_.y, new c.Expression(line.p1_.y));
 
+
+
             this.solver.addConstraint(eq)
-                       .addConstraint(eq2)
-                       .solve();
+                       .addConstraint(eq2);
+
+            if (this.state.tool === 'BEZIER') {
+               let eqn = new c.Equation(line.p1_.x, new c.Expression(line.c1_.x).plus(oldLine.c2_.x).divide(2));
+               let eqn2 = new c.Equation(line.p1_.y, new c.Expression(line.c1_.y).plus(oldLine.c2_.y).divide(2));
+                this.solver.addConstraint(eqn).addConstraint(eqn2);
+            }
+
+            this.solver.solve();
 
             this.setState({
               shapes: oldShapes,
@@ -872,7 +888,7 @@ class DrawArea extends React.Component {
     }
     let selectedLines = [];
     this.state.shapes.forEach(shape => {
-      if (shape.shape_ === 'line' && shape.selected) {
+      if ((shape.shape_ === 'line' || shape.shape_ === 'bezier') && shape.selected) {
         selectedLines.push(shape);
       }
     });
