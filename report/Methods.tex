@@ -48,26 +48,26 @@ So, we can take our geometric constraints, and format them as constraints in a l
 \item {\bf Length:} Constrains a line to be a fixed length. This was the most difficult constraint to implement, as the distance equation is very nonlinear. The {\it Manhattan distance} is defined as the sum of the absolute differences between the x- and y-coordinates of two points. So, we can estimate a Euclidean distance constraint with multiple Manhattan distance constraints in the following way. If we constraint a point to be within a fixed Manhattan distance of another point, the it will lie within a diamond centered at that point. Then, using linear equations, we can transform our coordinate system by a fixed angle and set another Manhattan distance distance constraint. This constraint will have the diamond rotated by that fixed angle. Enough of these constraints will approximate a circle. However, this only constrains two points to be {\it within} a fixed distance, so we must create minimum Manhattan distance constraints in a similar way. All of these together allows us to constrain the two endpoints of a line to a fixed distance from each other. This process is illustrated in figures \ref{dist1} through \ref{dist3}.
 \end{itemize}
 
-\begin{figure} 
+\begin{figure}[H]
 \includegraphics[scale=0.4]{dist1.png}
 \caption{The region constrained by $|x| + |y| \leq 1$.}
 \label{dist1}
 \end{figure}
 
-\begin{figure} 
+\begin{figure}[H]
 \includegraphics[scale=0.4]{dist2.png}
 \caption{The region constrained by $|x'| + |y'| \leq 1$ where $x'$ and $y'$ are the coordinates of the point in the coordinate system rotated by 30$^\circ$.}
 \label{dist2}
 \end{figure}
 
-\begin{figure} 
+\begin{figure}[H] 
 \includegraphics[scale=0.4]{dist3.png}
 \caption{With enough of these regions, we approximate the region constrained to be within $\frac{\sqrt{2}}{2}$ of the origin.}
 \label{dist3}
 \end{figure}
 
 
-\begin{figure}[h]
+\begin{figure}[H]
   \includegraphics[width=\linewidth]{constraints.jpg}
   \caption{Parametric constraints can be represented as equations and inequalities on the values they constrain. In this figure adapted from Ref. X we constrain point a to always lie on the circle of radius 1, we fix the line with endpoints $a$ and $b$ to have length $\sqrt{2}$ using the distance equation, and we set the line with endpoints $b$ and $c$ to lie on the $x$-axis and have length 1.}
   \label{fig:constraints}
