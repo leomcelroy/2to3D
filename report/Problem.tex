@@ -7,8 +7,21 @@
 %also a good section to provide any explanatory figures that illustrate your
 %problem. This section should be approximately 1-2 pages in length.
 
-- Existing CAD programs are not designed for laser cutting.- Laser cutting requires 2D schematics so non-parametric drawing programs are appealing to use but laser cutters produce 3D objects so parametric design capabilities are highly desirable. Parametric design is based on constraints and dimensions, which facilitates creating real objects. This is the way an engineer would design.- Commercial software is expensive.- Using existing CAD software to laser cut is like using a fighter jet to drive a nail. It?s over-engineered, arguably not the right tool for the job, and has a high probability of crashing and burning.- An ideal CAD program for laser cutting would incorporate features of both traditional drawing programs and parametric design programs.
+The problem we attempted to solve is that existing CAD programs are not designed for laser cutting. Laser cutting requires 2D schematics so non-parametric drawing programs are appealing to use but laser cutters produce 3D objects so parametric design capabilities are highly desirable. Parametric design is based on setting constraints and dimensions (the way an engineer would design). This approach facilitates creating real objects. The need for parametric design and basic drawing capabilities results in users switching between a variety of programs which each offer some subset of desired features. Consequently users often find themselves switching back and forth between programs when creating designs. This issue with the current laser cutting workflow is depicted in Figure X. A user creates the skeleton for a design in a parametric CAD program intended for modeling 3D objects (such as Onshape, Fusion360, or Solidworks). The user then imports this design into a some vector drawing software (Adobe Illustrator or CorelDRAW), then into a program capable of producing tool-paths (in this case CorelDRAW), which are finally sent to the laser cutter.
 
-Goal:
+\begin{figure}[!h]
+  \includegraphics[width=\linewidth]{laserCuttingWorkflow.jpg}
+  \caption{The current laser cutting workflow.}
+  \label{fig:laserCuttingWorkflow}
+\end{figure}
 
-Our goal was to create a single-page web-based program specifically designed for laser cutting that combines the best parts of 2D drawing programs and 3D CAD programs, while leaving the unnecessary parts behind. Specifically, we wanted our program to be SVG based so that drawings could be easily sent to a laser cutter, and we wanted to incorporate a geometric constraint solver so that we could easily create real-world objects.
+
+Another issue with the current laser cutting workflow is the price and complexity of commercial CAD software, be it parametric CAD or visual design software, makes laser cutting inaccessible to new hobbyists. Existing CAD software is over-engineered and inappropriate for a majority laser cutting tasks. An ideal CAD program for laser cutting would incorporate features of both traditional drawing programs and parametric design programs. Our goal was to create a single-page web-based program specifically designed for laser cutting. A program that combined the best parts of 2D drawing programs and 3D CAD programs, while leaving the unnecessary parts behind. Specifically, we wanted our program to be SVG based so that drawings could be easily sent to a laser cutter, and we wanted to incorporate a geometric constraint solver so that we could easily create real-world objects. The laser cutting workflow we would ultimately want to create would involve one program for producing all designs and tool paths. This is depicted in Figure X.
+
+\begin{figure}[h]
+  \includegraphics[width=\linewidth]{2to3DWorkflow.jpg}
+  \caption{The laser cutting workflow we aimed to create.}
+  \label{fig:2to3DWorkflow}
+\end{figure}
+
+Semester time constraints meant we did not incorporate CAM into 2to3D.
