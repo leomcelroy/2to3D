@@ -1,1 +1,7 @@
+node_modules/*
 node_modules/.cache/*
+.DS_Store
+report/*.aux
+report/*.log
+report/example-report.pdf
+report/*.synctex.gz
