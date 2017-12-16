@@ -1,8 +1,14 @@
 \section{Problem Statement}
 
-Formally describe the problem you are solving/studying. Provide the details of
-the problem, and any background that is necessary for a reader to understand
-the problem, methods, and results. This is where you may want to articulate any
-assumptions your research makes, and provide any important definitions. This is
-also a good section to provide any explanatory figures that illustrate your
-problem. This section should be approximately 1-2 pages in length.
+%Formally describe the problem you are solving/studying. Provide the details of
+%the problem, and any background that is necessary for a reader to understand
+%the problem, methods, and results. This is where you may want to articulate any
+%assumptions your research makes, and provide any important definitions. This is
+%also a good section to provide any explanatory figures that illustrate your
+%problem. This section should be approximately 1-2 pages in length.
+
+- Existing CAD programs are not designed for laser cutting.- Laser cutting requires 2D schematics so non-parametric drawing programs are appealing to use but laser cutters produce 3D objects so parametric design capabilities are highly desirable. Parametric design is based on constraints and dimensions, which facilitates creating real objects. This is the way an engineer would design.- Commercial software is expensive.- Using existing CAD software to laser cut is like using a fighter jet to drive a nail. It?s over-engineered, arguably not the right tool for the job, and has a high probability of crashing and burning.- An ideal CAD program for laser cutting would incorporate features of both traditional drawing programs and parametric design programs.
+
+Goal:
+
+Our goal was to create a single-page web-based program specifically designed for laser cutting that combines the best parts of 2D drawing programs and 3D CAD programs, while leaving the unnecessary parts behind. Specifically, we wanted our program to be SVG based so that drawings could be easily sent to a laser cutter, and we wanted to incorporate a geometric constraint solver so that we could easily create real-world objects.
