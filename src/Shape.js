@@ -296,6 +296,60 @@ class Bezier extends AbstractLine {
     return onLine(point, this.start_, this.end_, this.lineSelectDistance_);
   }
 
+  getLinePathData() {
+    return "M " + this.toLine().map(p => `${p['x']} ${p['y']}`);
+  }
+
+  svgRender(index, lengths = true, alwaysLengths = false) {
+      let points = this.points();
+      let circleColors = this.getCircleColors();
+      for (var i = 0; i < points.length; i++) {
+        points[i].color = circleColors[i];
+      }
+      let lineColor = this.selected ? "blue" : "black";
+
+      let style = {
+        fill: "none",
+        strokeWidth: "3px",
+        stroke: lineColor,
+        strokeLinejoin: "round",
+        strokeLinecap: "round",
+      }
+
+      let selectLineStyle = {
+        fill: "none",
+        strokeWidth: "3px",
+        stroke: "grey",
+        strokeLinejoin: "round",
+        strokeLinecap: "round",
+        strokeDasharray:"5, 5"
+      }
+
+      const pathData = this.getPathData();
+
+      const selectLineData = this.getLinePathData();
+
+      let selectedAtAll = this.selectedAtAll(lengths, alwaysLengths);
+
+      let textStyle = {
+        WebkitTouchCallout: "none", /* iOS Safari */
+          WebkitUserSelect: "none", /* Safari */
+           khtmlUserSelect: "none", /* Konqueror HTML */
+             MozUserSelect: "none", /* Firefox */
+              msUserSelect: "none", /* Internet Explorer/Edge */
+                userSelect: "none", /* Non-prefixed version, currently
+                                        supported by Chrome and Opera */
+      }
+      return (
+        <g>
+          <path d={selectLineData} style={selectLineStyle} id={`selectLine${index}`}/>
+          <path d={pathData} style={style} id={`${index}`}/>
+          {(selectedAtAll) ? <text dy={"-8"}><textPath href={`#${index}`} startOffset={"43%"} style={textStyle}>{Math.round(this.length()*1000)/1000}</textPath></text> : null}
+          {points.map(p => <circle cx={`${p['x']}`} cy={`${p['y']}`} r="5" fill={p.color}/>)}
+        </g>
+      )
+  }
+
 }
 
 class Freehand {
