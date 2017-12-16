@@ -13,7 +13,7 @@ const functionAverageX = (total, amount, index, array) => {
   total += amount.x;
   if( index === array.length-1 ) {
     return total/array.length;
-  }else {
+  } else {
     return total;
   }
 };
@@ -1082,7 +1082,9 @@ class DrawArea extends React.Component {
     filename = `${filename}.txt`;
 
     let state = this.state;
+    console.log("pure state", state);
     let text = JSON.stringify(state);
+    console.log("impure state", text);
 
     // console.log(state);
     // console.log(text);
@@ -1115,7 +1117,7 @@ class DrawArea extends React.Component {
         let oldState = JSON.parse(stateOfInterest[0]);
         let state = this.state;
         let oldShapes = oldState.shapes;
-        console.log("oldShapes",oldShapes);
+        //console.log("oldShapes", oldShapes);
 
         let newShapes = oldShapes.map(oldShape => {
           let newShape = undefined;
@@ -1136,20 +1138,28 @@ class DrawArea extends React.Component {
           newShape = Object.assign( Object.create( Object.getPrototypeOf(newShape)), oldShape); //this is so we maintain class methods
 
           // console.log("points", newShape.p1_._x, newShape.p2_._x)
-          if (newShape.shape_ === "line" || newShape.shape === "bezier") {
+          if (newShape.shape_ === "line") {
             newShape.p1_ = new c.Point(newShape.p1_._x.value, newShape.p1_._y.value);
             newShape.p2_ = new c.Point(newShape.p2_._x.value, newShape.p2_._y.value);
 
-            newShape.pointSelectDistance_ = 5;
-            newShape.lineSelectDistance_ = .04;
+            // newShape.pointSelectDistance_ = 5;
+            // newShape.lineSelectDistance_ = .04;
 
             this.solver.addPointStays([newShape.p1_, newShape.p2_]);
-          };
+          } else if (newShape.shape_ === "bezier") {
+            newShape.p1_ = new c.Point(newShape.p1_._x.value, newShape.p1_._y.value);
+            newShape.p2_ = new c.Point(newShape.p2_._x.value, newShape.p2_._y.value);
+            newShape.c1_ = new c.Point(newShape.c1_._x.value, newShape.c1_._y.value);
+            newShape.c2_ = new c.Point(newShape.c2_._x.value, newShape.c2_._y.value);
+
+            this.solver.addPointStays([newShape.p1_, newShape.p2_]);
+            this.solver.addPointStays([newShape.c1_, newShape.c2_]);
+          }
 
           return newShape
         })
 
-        console.log("newShapes", newShapes);
+        //console.log("newShapes", newShapes);
 
         this.setState({
           isDrawing: false,
@@ -1337,9 +1347,9 @@ class DrawArea extends React.Component {
       case 69: //e
         this.setState({tool:"RECTANGLE"})
         break;
-      // case 84: //test
-      //   console.log(this.state.file)
-      //   break;
+      case 84: //test
+        console.log(this.state.shapes)
+        break;
       default:
         return;
     }
