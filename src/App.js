@@ -792,7 +792,7 @@ class DrawArea extends React.Component {
   }
 
   setDistanceConstraint(distance, line) {
-    let numsteps = 4;
+    let numsteps = 8;
     for (var angle = 0; angle <= 0.785398 /*45 deg*/; angle += (0.785398 / numsteps)) {
       this.setManhattanDistanceConstraint(distance, angle, line);
     }
