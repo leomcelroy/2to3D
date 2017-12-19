@@ -9,25 +9,25 @@
 %brief outline for the organization of the rest of the paper. This section
 %should be approximately 1 page in length.
 
-In the the last ten years the popularization of 3D printers and makerspaces has caused interest in digital fabricators to blossom. Digital fabricators are machines which use computer controlled tools to produce 3D objects. The digital fabrication workflow entails a computer-aided design (CAD) process where the user produces electronic schematics. These schematics are then brought into a computer-aided manufacturing (CAM) program where the user creates tool paths for the machine, the output of this process is instructions for the fabrication machine. Finally these instructions are uploaded to the digital fabricator and the schematic is fabricated in the medium worked by the fabrication machine. 
+In the the last ten years the popularization of 3D printers and makerspaces has caused interest in digital fabricators to blossom. Digital fabricators are machines which use computer controlled tools to produce 3D objects. The digital fabrication workflow beings in a computer-aided design (CAD) program where the user produces electronic schematics. These schematics are then brought into a computer-aided manufacturing (CAM) program where the user creates tool paths for a computer numerical control (CNC) machine, this process outputs instructions for the fabrication machine. Finally these instructions are uploaded to a digital fabricator and the schematic is recreated in the medium worked by the fabrication machine. Depending on the machine this medium can be plastic, paper, cardboard, metal, stone, wood, glass, or even organic material. The digital fabrication workflow is depicted in Figure \ref{fig:digiFabWorkflow}.
 
 \begin{figure}[H]
   \includegraphics[width=\linewidth]{digiFabWorkflow.jpg}
-  \caption{The digital fabrication workflow.}
+  \caption{The digital fabrication workflow from CAD to CAM to digital fabricator.}
   \label{fig:digiFabWorkflow}
 \end{figure}
 
-Personal digital fabricators, or fabricators intended for use by a large audience (in contrast to industrial digital fabricators), include 3D printers, computer-numerical-control (CNC) mills, and laser cutters. Laser cutters are often considered the best balance of accessibility and usefulness of these digital fabricators. A laser cutter works by focusing a high powered laser through a focusing head which is attached to a gantry. The gantry controls the position of the head and therefore the location of the laser on a workpiece that rests on a bed underneath the gantry.
+Personal digital fabricators, or fabricators intended for use outside of an industrial manufacturing setting (think personal computer versus mainframe), include 3D printers, computer-numerical-control (CNC) mills, and laser cutters. Laser cutters are often considered the best balance of accessibility and usefulness of these digital fabricators. A laser cutter works by focusing a high powered laser through a focusing head which is attached to a gantry. The gantry controls the position of the head and therefore the location of the laser on a workpiece that rests on a bed underneath the gantry. A top-view schematic of a laser cutter is depicted in Figure~\ref{fig:lasersystem}.
 
 \begin{figure}[H]
   \includegraphics[width=\linewidth]{lasersystem.jpg}
-  \caption{Top view schematic of laser cutter.}
+  \caption{Top-view schematic of laser cutter adapted from Ref. \cite{laos}.}
   \label{fig:lasersystem}
 \end{figure}
 
-Laser cutters are capable of cutting and engraving. Most commercial laser cutters will cut plastic, paper, cardboard, and wood up to a quarter inch. They can also engrave all these materials and most types of metal and glass.
+Laser cutters are capable of cutting and engraving. Most commercial laser cutters will cut plastic, paper, cardboard, and wood up to a quarter inch thick. They can also engrave all these materials and most types of metal and glass.
 
-There are two main paradigms for modeling in CAD programs - direct modeling and parametric modeling. In direct modeling the user interacts directly with the geometry. This is typically through transformations such as dragging, rotating, or scaling. In parametric modeling the design program utilizes a geometric constraint solver that allows the user to specify constraints and dimensions on geometry. The design is then automatically adjusted to satisfy these constraints when the user modifies geometry directly. Figure X depicts the common constraint capabilities of a parametric design program.
+There are two main paradigms for modeling in CAD programs - direct modeling and parametric modeling. In direct modeling the user interacts directly with the geometry. This is typically through transformations such as dragging, rotating, or scaling. In parametric modeling the design program utilizes a geometric constraint solver that allows the user to specify constraints and dimensions on geometry. The design is then automatically adjusted to satisfy these constraints when the user modifies geometry directly. Figure~\ref{fig:parametricProgram} depicts the common constraint capabilities of a parametric design program.
 
 \begin{figure}[H]
   \includegraphics[width=\linewidth]{parametricProgram.jpg}
@@ -36,3 +36,7 @@ There are two main paradigms for modeling in CAD programs - direct modeling and 
 \end{figure}
 
 Laser cutters are typically 2-dimensional fabricators which means there is no $z$-axis adjustability during fabrication. Consequently, prevalent drawing programs such as Adobe Illustrator and CorelDRAW were adopted for creating designs intended for laser cutting. Vector graphics, a scale-agnostic format where images are represented mathematically, are typically used for generating cutting paths. Rasters, a format where images are represented by pixels, are typically interpreted as engravings when laser cutting.
+
+The issue that motivated our project is that the laser cutting workflow is often made unnecessarily cumbersome by users switching between various design programs. These include parametric CAD programs, with features intended for designing 3D real objects, and high-powered drawing programs, with features intended for creating intricate drawings. Our project aims to unify the essential features for laser cutting found in each of these design softwares into one program.
+
+In Section 2 we present the current issue with the laser cutting workflow and design process. In Section 3 we briefly review programs with some of the features we were interested in incorporating into 2to3D. In Section 4 we describe the basic shape tools and how we handle geometric constraints using Cassowary.js. In Section 5 we cover the rest of functionality and capabilities of the 2to3D program. And in Section 6 we discuss the success of the project, review the major design principal of 2to3D, and describe extensions to our work which will result in 2to3D becoming a viable substitute for existing programs used for laser cutting. 

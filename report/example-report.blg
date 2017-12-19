@@ -1,0 +1,62 @@
+This is BibTeX, Version 0.99d (TeX Live 2017)
+Capacity: max_strings=100000, hash_size=100000, hash_prime=85009
+The top-level auxiliary file: example-report.aux
+The style file: IEEEtran.bst
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Database file #1: references.bib
+You're missing a field name---line 15 of file references.bib
+ : 
+ : %howpublished = "\url{https://github.com/xibyte/jsketcher}",
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
+-- IEEEtran.bst version 1.14 (2015/08/26) by Michael Shell.
+-- http://www.michaelshell.org/tex/ieeetran/bibtex/
+-- See the "IEEEtran_bst_HOWTO.pdf" manual for usage information.
+
+Done.
+You've used 6 entries,
+            4087 wiz_defined-function locations,
+            858 strings with 8055 characters,
+and the built_in function-call counts, 2794 in all, are:
+= -- 204
+> -- 35
+< -- 10
++ -- 19
+- -- 6
+* -- 123
+:= -- 472
+add.period$ -- 12
+call.type$ -- 6
+change.case$ -- 7
+chr.to.int$ -- 27
+cite$ -- 6
+duplicate$ -- 217
+empty$ -- 265
+format.name$ -- 7
+if$ -- 615
+int.to.chr$ -- 0
+int.to.str$ -- 6
+missing$ -- 45
+newline$ -- 49
+num.names$ -- 5
+pop$ -- 136
+preamble$ -- 1
+purify$ -- 0
+quote$ -- 2
+skip$ -- 206
+stack$ -- 0
+substring$ -- 71
+swap$ -- 138
+text.length$ -- 1
+text.prefix$ -- 0
+top$ -- 5
+type$ -- 6
+warning$ -- 0
+while$ -- 8
+width$ -- 7
+write$ -- 77
+(There was 1 error message)

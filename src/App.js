@@ -1085,7 +1085,6 @@ class DrawArea extends React.Component {
         this.setState({
           isDrawing: false,
           tool: undefined,
-          //lines: [], //will be a list of lists
           start: undefined,
           shapes: [], //will be a list of shapes
           selected: undefined, //will be whatever object is 'selected'
@@ -1093,25 +1092,23 @@ class DrawArea extends React.Component {
           pivotPoint: undefined,
           originalShapes: undefined,
           newShapes: [],
-          //selectedLines: [], //i think we don't need this
           selectedPoints: [],
           originalPoint: undefined,
           dragStart: undefined,
           onDragEndCallbacks: [],
           mouseDragged: false,
-          interLineConstraints: [],
+          interLineConstraints: [], //holds all parallel and perpindicular constraints
           svgMouse: undefined,
           workpieceSize: oldState.workpieceSize,
           clipboard: [],
           firstPolyline: undefined,
-          displayLengths: "selected",
           rotation: undefined,
           translation: undefined,
           scaleFactor: undefined,
           displayTransformations: true,
-
+          displayLengths: "selected",
+          minManhattanConstraints: [],
           solverPoints: [], //holds array of c.Point objects
-          //file: undefined,
         });
 
         this.setState({shapes:newShapes});
@@ -1251,9 +1248,6 @@ class DrawArea extends React.Component {
         break;
       case 66: //b
         this.setState({tool:"BEZIER"});
-        break;
-      case 74: //j
-        this.setState({tool:"PAN"});
         break;
       case 187: //+
         this.setState({tool:"ZOOMIN"})
@@ -1473,7 +1467,7 @@ class DrawArea extends React.Component {
           <li style={{fontSize:14}}><button style={this.state.tool === "ROTATE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ROTATE")}>Rotate (R)</button>{this.state.rotation ? `Angle: ${this.state.rotation}` : null} {this.state.rotation && <sup>o</sup>}</li>
           <li style={{fontSize:14}}><button style={this.state.tool === "SCALE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SCALE")}>Scale (S)</button>{this.state.scaleFactor ? `Factor: ${this.state.scaleFactor}` : null}</li>
           <li style={{fontSize:14}}>View Tools</li>
-          <li><button style={this.state.tool === "PAN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("PAN")}>Pan (J)</button></li>
+          <li><button style={this.state.tool === "PAN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("PAN")}>Pan (H)</button></li>
           <li>
             <button style={this.state.tool === "ZOOMIN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMIN")}>Zoom In (+)</button>
             <button style={this.state.tool === "ZOOMOUT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMOUT")}>Zoom Out (-)</button>
