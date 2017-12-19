@@ -9,18 +9,20 @@
 %also discuss possible extensions of your work. This section should be
 %approximately 1 page in length.
 
-Highly accessible but not the most robust parametric program. Users interested in using open-source web based programs for CAM can easily use 2to3D in conjunction with fab modules.
+We accomplished our main goal of creating a parametric web-based vector drawing program. Among the programs we studied 2to3D is perhaps the most accessible one with parametric capabilities. The program supports basic drawing tools and features including: polylines/polygons, freehand, beziers, rectangles, and direct transformations. Constraints were implemented using Cassowary.js which enabled robust and fast solving of linear constraints. Non-linear constraints had to be represented with abstractions which could be defined linearly. The major design principal guiding our work is that more is not necessarily better. The programs currently used for laser cutting are for the mostly highly sophisticated, capable, and powerful. The issue is that they were not designed with laser cutting as an intended use case. 2to3D stands a chance to supplant multi-million dollar programs because it is not intended to be feature packed. Our own limited resources in implementing the program become our greatest advantage. 2to3D only contains features which are useful and relevant to laser cutting, or more generally 2D digital fabrication. The inclusion of only what are essential features reduces cognitive load on the user which hopefully in conjunction with the ease of accessing the program will make laser cutting a more accessible activity. As with all software engineering, the work is never done. Future work would include:
 
--specification of transformation values by user when direct transforming
+\begin{itemize}
+  \item Building out shape primitives to include circles and arcs, as well as associated constraints (such as tangent). Introducing these shape primitives would complete the set of drawing capabilities ordinarily found in 2D/3D parametric CAD programs.
 
-We accomplished our main goal of creating a parametric web-based vector drawing program, but as with all software engineering, the work is never done. Future work would include the following goals:
+  \item Improvement of the program's state-handling to enhance user experience. This could involve introducing atomic operations which would allow tracking of a file's timeline. Restructuring the program in such a manner would allow more comprehensive saving of files without the current issues of tracking constraints. It would also enable the creation of undo and redo features which greatly enhance usability.
 
-- Build out shape primitives to include circles and arcs, as well as associated constraints (such as tangent).
+  \item Perhaps the most important improvement to be made in the next iteration of 2to3D is the incorporation of a geometric constraint solver capable of handling non-linear constraints without abstraction. Ideally this would entail creating a JavaScript library that can efficiently solve systems of nonlinear equations using gradient descent or automatic differentiation. Using one of these methods allows the solver to find solutions which are close to the user specified geometry, thereby enhancing the programs intuitiveness and usability.
 
-- Improve the program?s state-handling to enhance user experience. This could involve introducing atomic operations which would allow tracking of a file?s timeline.
+  \item Users interested in fully encapsulating the CAD/CAM workflow within open-source web-based environments can use 2to3D in conjunction with MIT's Center for Bits and Atoms' "fab modules." We included a link to fab modules within 2to3D's toolbox but so a user only must download their 2to3D design as an SVG and upload it into the "fab modules." This process could be improved by integrating the two programs into a single environment.
+  
+  \item Improve GUI and drawing features. This encompasses a variety of changes which include allowing the user to specify transformation values when conducting direct transformations; Adding more drawing tools which can be interpreted as engravings and/or incorporating a raster image import feature.
+\end{itemize}
 
-- Create a JavaScript library that can efficiently solve systems of nonlinear equations using gradient descent.
-
-- Integrate 2to3D with existing open-source web-based CAM software such as MIT?s Center for Bits and Atoms? ?fab modules.?
+Incorporating these extensions would result in a program which can be widely adopted by laser cutting hobbyists and enthusiasts. One other possible extension is the introduction of a backend server and database for storing files. This could enhance the program by allowing users to store projects in the cloud but also introduces challenges to scaling up to wide adaption of 2to3D. By its current design 2to3D only demands local computational resources so once the program has been made it requires minimal involvement from adminstrators. 
 
 
