@@ -3,7 +3,7 @@ import {Line, Bezier, Freehand} from './Shape.js';
 import {ReactSVGPanZoom} from 'react-svg-pan-zoom';
 
 var c = require('cassowary');
-const EPS = 0.1;
+const EPS = 0.2;
 
 //----------helper functions----------
 const functionAverageX = (total, amount, index, array) => {
@@ -72,6 +72,7 @@ class DrawArea extends React.Component {
       scaleFactor: undefined,
       displayTransformations: true,
       displayLengths: "selected",
+      minManhattanConstraints: [],
 
       solverPoints: [], //holds array of c.Point objects
       //file: undefined,
@@ -603,6 +604,12 @@ class DrawArea extends React.Component {
       } catch (e) {/*do nothing */}
     });
 
+    this.state.minManhattanConstraints.forEach(constraint => {
+      try {
+        this.solver.removeConstraint(constraint.ineq);
+      } catch (e) {/*do nothing */}
+    });
+
     let dx = point.x - this.state.dragStart.x;
     let dy = point.y - this.state.dragStart.y;
 
@@ -645,10 +652,43 @@ class DrawArea extends React.Component {
       this.solver.addConstraint(constraint.constr2);
     });
 
+    //update minimum distance constraints
+    this.state.minManhattanConstraints.forEach(constraint => {
+      this.setMinDist(constraint);
+    });
+
 
     //resolve and re-render
     this.solver.resolve();
     this.setState({});
+  }
+
+  setMinDist(constraint) {
+    let line = constraint.line;
+    let angle = constraint.angle;
+    let p1prime = this.getRotatedPoint(line.p1_, angle);
+    let p2prime = this.getRotatedPoint(line.p2_, angle);
+
+    var ineq;
+
+    // var ratio = Math.abs(p1prime.xval-p2prime.xval) / Math.abs(p1prime.yval-p2prime.yval);
+    // if (!(0.9 <= ratio || ratio >= 1.1)) {
+    //   return;
+    // }
+
+    if (p1prime.xval >= p2prime.xval && p1prime.yval >= p2prime.yval) {
+      ineq = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p1prime.y).minus(p2prime.y), c.GEQ, constraint.distance - EPS);
+    } else if (p2prime.xval >= p1prime.xval && p1prime.yval >= p2prime.yval) {
+      ineq = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p1prime.y).minus(p2prime.y), c.GEQ, constraint.distance - EPS);
+    } else if (p1prime.xval >= p2prime.xval && p2prime.yval >= p1prime.yval) {
+      ineq = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p2prime.y).minus(p1prime.y), c.GEQ, constraint.distance - EPS);
+    } else {
+      ineq = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p2prime.y).minus(p1prime.y), c.GEQ, constraint.distance - EPS);
+    }
+
+    //console.log(ineq);
+    constraint.ineq = ineq;
+    this.solver.addConstraint(ineq);
   }
 
   findContainingInterLineConstraints(point) {
@@ -787,14 +827,15 @@ class DrawArea extends React.Component {
   }
 
   setManhattanDistanceConstraint(distance, angle, line) {
+    let mDist = Math.sqrt(2*(distance**2));
     let p1prime = this.getRotatedPoint(line.p1_, angle);
     let p2prime = this.getRotatedPoint(line.p2_, angle);
 
     //four LEQ constraints from absolute value constraints
-    let ineq1 = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p1prime.y).minus(p2prime.y), c.LEQ, distance + EPS);
-    let ineq2 = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p1prime.y).minus(p2prime.y), c.LEQ, distance + EPS);
-    let ineq3 = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p2prime.y).minus(p1prime.y), c.LEQ, distance + EPS);
-    let ineq4 = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p2prime.y).minus(p1prime.y), c.LEQ, distance + EPS);
+    let ineq1 = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p1prime.y).minus(p2prime.y), c.LEQ, mDist + EPS);
+    let ineq2 = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p1prime.y).minus(p2prime.y), c.LEQ, mDist + EPS);
+    let ineq3 = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p2prime.y).minus(p1prime.y), c.LEQ, mDist + EPS);
+    let ineq4 = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p2prime.y).minus(p1prime.y), c.LEQ, mDist + EPS);
     this.solver.addConstraint(ineq1).addConstraint(ineq2).addConstraint(ineq3).addConstraint(ineq4);
 
     // //add LEQ constraint (this will ahve to be updated)
@@ -804,17 +845,22 @@ class DrawArea extends React.Component {
     // let ineq8 = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p2prime.y).minus(p1prime.y), c.GEQ, distance - EPS, c.Strength.strong);
     // this.solver.addConstraint(ineq5).addConstraint(ineq6).addConstraint(ineq7).addConstraint(ineq8);
 
-    var ineq;
-    if (p1prime.x.value >= p2prime.x && p1prime.y >= p2prime.y) {
-      ineq = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p1prime.y).minus(p2prime.y), c.GEQ, distance - EPS, c.Strength.medium);
-    } else if (p2prime.x.value >= p1prime.x && p1prime.y >= p2prime.y) {
-      ineq = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p1prime.y).minus(p2prime.y), c.GEQ, distance - EPS, c.Strength.medium);
-    } else if (p1prime.x.value >= p2prime.x && p2prime.y >= p1prime.y) {
-      ineq = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p2prime.y).minus(p1prime.y), c.GEQ, distance - EPS, c.Strength.medium);
-    } else {
-      ineq = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p2prime.y).minus(p1prime.y), c.GEQ, distance - EPS, c.Strength.medium);
-    }
-    this.solver.addConstraint(ineq);
+    let constraint = {distance, angle, line};
+    this.setMinDist(constraint);
+
+    // var ineq;
+    // if (p1prime.x.value >= p2prime.x && p1prime.y >= p2prime.y) {
+    //   ineq = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p1prime.y).minus(p2prime.y), c.GEQ, distance - EPS);
+    // } else if (p2prime.x.value >= p1prime.x && p1prime.y >= p2prime.y) {
+    //   ineq = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p1prime.y).minus(p2prime.y), c.GEQ, distance - EPS);
+    // } else if (p1prime.x.value >= p2prime.x && p2prime.y >= p1prime.y) {
+    //   ineq = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p2prime.y).minus(p1prime.y), c.GEQ, distance - EPS);
+    // } else {
+    //   ineq = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p2prime.y).minus(p1prime.y), c.GEQ, distance - EPS);
+    // }
+    // this.solver.addConstraint(ineq);
+    let oldConstraints = this.state.minManhattanConstraints;
+    oldConstraints.push(constraint);
   }
 
   getRotatedPoint(cPoint, angle) {
@@ -824,12 +870,14 @@ class DrawArea extends React.Component {
     let xcos = new c.Expression(cPoint.x).times(cos);
     let ysin = new c.Expression(cPoint.y).times(sin);
     let xprime = xcos.minus(ysin);
+    let xval = (cPoint.x.value * cos) - (cPoint.y.value * sin)
 
     let xsin = new c.Expression(cPoint.x).times(sin);
     let ycos = new c.Expression(cPoint.y).times(cos);
     let yprime = xsin.plus(ycos);
+    let yval = (cPoint.x.value * sin) + (cPoint.y.value * cos);
 
-    return {'x': xprime, 'y': yprime};
+    return {'x': xprime, 'y': yprime, xval , yval };
 
   }
 
