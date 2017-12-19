@@ -197,6 +197,19 @@ class Bezier extends AbstractLine {
     });
   }
 
+  toLine() { return [cPointToPoint(this.p1_), cPointToPoint(this.p2_), cPointToPoint(this.c1_), cPointToPoint(this.c2_)] };
+
+  toLineNoControlPoints() { return [cPointToPoint(this.p1_), cPointToPoint(this.p2_)] };
+
+  pointsToCPoints(points, solver) {
+    this.p1_ = new c.Point(points[0].x, points[0].y);
+    this.p2_ = new c.Point(points[1].x, points[1].y);
+    this.c1_ = new c.Point(points[2].x, points[2].y);
+    this.c2_ = new c.Point(points[3].x, points[3].y);
+
+    solver.addPointStays([this.p1_, this.p2_, this.c1_, this.c2_]);
+  }
+
   getCircleColors() {
     return [this.p1_selected, this.c1_selected, this.c2_selected, this.p2_selected]
       .map(selected => selected ? "blue" : "black");
@@ -297,7 +310,7 @@ class Bezier extends AbstractLine {
   }
 
   getLinePathData() {
-    return "M " + this.toLine().map(p => `${p['x']} ${p['y']}`);
+    return "M " + this.toLineNoControlPoints().map(p => `${p['x']} ${p['y']}`);
   }
 
   svgRender(index, lengths = true, alwaysLengths = false) {
