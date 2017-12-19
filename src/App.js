@@ -811,7 +811,7 @@ class DrawArea extends React.Component {
   }
 
   setDistance() {
-    let dist = 50; //TODO: ACTUALLY GET distance from textbox
+    let dist = parseInt(document.getElementById('length').value);
     this.state.shapes.forEach(shape => {
       if (shape.shape_ === 'line' && shape.selected) {
         this.setDistanceConstraint(dist, shape);
@@ -1618,8 +1618,10 @@ class DrawArea extends React.Component {
           </li>
           <li>
             <button style={defaultButtonStyle} onClick={(e) => this.makeParallel(e)}>Parallel</button>
-            <button style={defaultButtonStyle} onClick={(e) => this.makePerpendicular(e)}>Perpendicular</button>
-            <button style={defaultButtonStyle} onClick={(e) => this.setDistance(e, this.solver)}>Distance</button>
+            <button style={defaultButtonStyle} onClick={(e) => this.makePerpendicular(e)}>Perpendicular</button> <br></br>
+            <button style={defaultButtonStyle} onClick={(e) => this.setDistance(e, this.solver)}>Length</button>
+            <label>length: </label>
+            <input type="text" id="length" style={{fontSize:14, width: "30px"}}/>
           </li>
           <li><b>File</b></li>
           <li>
