@@ -1,8 +1,7 @@
 import React from 'react';
 var c = require('cassowary');
-//look at maker.js?
 
-class AbstractLine {
+class AbstractLine {  //abstract super class for Lines and Beziers
   constructor(startingPoint, solver) {
     this.shape_ = 'line';
     this.p1_ = new c.Point(startingPoint.x, startingPoint.y);
@@ -16,14 +15,14 @@ class AbstractLine {
     solver.addPointStays([this.p1_, this.p2_]);
   }
 
-  drawToPoint(point, solver) {
+  drawToPoint(point, solver) { //called when we want to be drawing this line to a certain point
     solver
       .suggestValue(this.p2_.x, point.x)
       .suggestValue(this.p2_.y, point.y)
       .resolve();
   }
 
-  addEditVars(solver) {
+  addEditVars(solver) {  //adds the endpoints to the solver
     solver
       .addEditVar(this.p2_.x)
       .addEditVar(this.p2_.y)
@@ -142,7 +141,9 @@ class Line extends AbstractLine {
     return length;
   }
 
-  selectedObjectAt(point) {
+  selectedObjectAt(point) {  //this function is called when the user clicks at `point`
+    //it will change whether an endpoint or the entire line is selected,
+    //as well as return a callback that should be called on mouseup
     console.log("pointSelectDistance_",this.pointSelectDistance_**2);
     if (distanceSquared(point, cPointToPoint(this.p1_)) < this.pointSelectDistance_**2) {
       if (this.p1_selected) {
@@ -264,7 +265,9 @@ class Bezier extends AbstractLine {
     return false;
   }
 
-  selectedObjectAt(point) {
+  selectedObjectAt(point) {//this function is called when the user clicks at `point`
+    //it will change whether an endpoint or the entire line is selected,
+    //as well as return a callback that should be called on mouseup
     if (distanceSquared(point, cPointToPoint(this.p1_)) < this.pointSelectDistance_**2) {
       if (this.p1_selected) {
         //return a callbcak to be called on mouseup (if mouse was not dragged)
