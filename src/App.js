@@ -3,7 +3,7 @@ import {Line, Bezier, Freehand} from './Shape.js';
 import {ReactSVGPanZoom} from 'react-svg-pan-zoom';
 
 var c = require('cassowary');
-const EPS = 0.2;
+const EPS = 0.2; //buffer zone for distance constraint
 
 //----------helper functions----------
 const functionAverageX = (total, amount, index, array) => {
@@ -42,13 +42,13 @@ const functionGetAngle = (p1, p2) => {return Math.atan2(p2.y - p1.y, p2.x - p1.x
 
 //----------end of helper functions----------
 
+//-----------------Main app------------------
 class DrawArea extends React.Component {
   constructor() {
     super();
     this.state = {
       isDrawing: false,
       tool: undefined,
-      //lines: [], //will be a list of lists
       start: undefined,
       shapes: [], //will be a list of shapes
       selected: undefined, //will be whatever object is 'selected'
@@ -56,13 +56,12 @@ class DrawArea extends React.Component {
       pivotPoint: undefined,
       originalShapes: undefined,
       newShapes: [],
-      //selectedLines: [], //i think we don't need this
       selectedPoints: [],
       originalPoint: undefined,
       dragStart: undefined,
       onDragEndCallbacks: [],
       mouseDragged: false,
-      interLineConstraints: [],
+      interLineConstraints: [], //holds all parallel and perpindicular constraints
       svgMouse: undefined,
       workpieceSize: {x:500, y:500},
       clipboard: [],
@@ -73,9 +72,7 @@ class DrawArea extends React.Component {
       displayTransformations: true,
       displayLengths: "selected",
       minManhattanConstraints: [],
-
       solverPoints: [], //holds array of c.Point objects
-      //file: undefined,
     };
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -86,27 +83,20 @@ class DrawArea extends React.Component {
   }
 
   handleMouseDown(mouseEvent) {
-    //console.log("mouse down");
-
     this.setState({
       mousedown: true,
     });
-    if (mouseEvent.button !== 0) {
+    if (mouseEvent.button !== 0) { //only handle left-clicks
       return;
     }
     var point = this.relativeCoordinatesForEvent(mouseEvent);
     let oldShapes = this.state.shapes;
     var Shape = Line; //used to switch between polyline and bezier;
 
-
     switch (this.state.tool) {
       case "FREEHAND":
-
         let freehandCurve = new Freehand(point);
-
-
         oldShapes.push(freehandCurve);
-
         this.setState({
             shapes: oldShapes,
             isDrawing: true,
@@ -114,6 +104,7 @@ class DrawArea extends React.Component {
         break;
       case "BEZIER":
         Shape = Bezier; //turn on bezier drawing
+        //fallthrough. polylines and beziers are handled mostly the same
       case "POLYLINE":
         if (this.state.isDrawing) {
           let firstLine = this.state.firstPolyline;
@@ -123,8 +114,6 @@ class DrawArea extends React.Component {
 
           let closed = firstLine ? Math.abs(firstLine.toLine()[0].x - lastLine.toLine()[1].x) < 10 && Math.abs(firstLine.toLine()[0].y - lastLine.toLine()[1].y) < 10 : false;
           if (closed) {
-            console.log('closed');
-            //lastLine.deselect();
             this.solver.endEdit();
 
             let eq = new c.Equation(lastLine.p2_.x, new c.Expression(firstLine.p1_.x));
@@ -133,7 +122,7 @@ class DrawArea extends React.Component {
             this.solver.addConstraint(eq)
                        .addConstraint(eq2);
 
-            if (this.state.tool === 'BEZIER') {
+            if (this.state.tool === 'BEZIER') { //make adjacent control points colinear with endpoint in between
               let eqn = new c.Equation(firstLine.p1_.x, new c.Expression(firstLine.c1_.x).plus(lastLine.c2_.x).divide(2));
               let eqn2 = new c.Equation(firstLine.p1_.y, new c.Expression(firstLine.c1_.y).plus(lastLine.c2_.y).divide(2));
               this.solver.addConstraint(eqn).addConstraint(eqn2);
@@ -144,17 +133,11 @@ class DrawArea extends React.Component {
             this.setState({
               isDrawing: false,
             });
-          } else {
-            //lastLine.deselect();
+          } else {  //if not closed
             this.solver.endEdit();
 
             let line = new Shape(point, this.solver);
             let oldLine = oldShapes[oldShapes.length - 1];
-
-            //add coincident constraint
-            // console.log("old x:", oldLine.p2_.x.value , "new x:",line.p1_.x.value);
-            // console.log("old y:", oldLine.p2_.y.value , "new y:",line.p1_.y.value);
-
 
             line.addEditVars(this.solver);
             this.solver.beginEdit();
@@ -169,7 +152,7 @@ class DrawArea extends React.Component {
             this.solver.addConstraint(eq)
                        .addConstraint(eq2);
 
-            if (this.state.tool === 'BEZIER') {
+            if (this.state.tool === 'BEZIER') { //make adjacent control points colinear with endpoint in between
                let eqn = new c.Equation(line.p1_.x, new c.Expression(line.c1_.x).plus(oldLine.c2_.x).divide(2));
                let eqn2 = new c.Equation(line.p1_.y, new c.Expression(line.c1_.y).plus(oldLine.c2_.y).divide(2));
                 this.solver.addConstraint(eqn).addConstraint(eqn2);
@@ -181,7 +164,7 @@ class DrawArea extends React.Component {
               shapes: oldShapes,
             });
           }
-        } else {
+        } else { //if not already drawing:
           let line = new Shape(point, this.solver);
           console.log(line);
 
@@ -253,7 +236,7 @@ class DrawArea extends React.Component {
         //click and drag
         let anySelected = false;
         this.state.shapes.forEach((shape) => {
-          let callback = shape.selectedObjectAt(point);
+          let callback = shape.selectedObjectAt(point);  //these are callbacks that should be run on mouseup
           console.log(callback);
           if (callback) {
             let oldCallbacks = this.state.onDragEndCallbacks;
@@ -343,21 +326,10 @@ class DrawArea extends React.Component {
   }
 
   relativeCoordinatesForEvent(mouseEvent) {
-    //const boundingRect = this.refs.drawArea.getBoundingClientRect();
-    //console.log(mouseEvent.point);
-    // return {
-    //   x: mouseEvent.clientX - boundingRect.left,
-    //   y: mouseEvent.clientY - boundingRect.top,
-    // };
-
     return (this.state.svgMouse);
   }
 
   handleMouseMove(mouseEvent) {
-    //console.log("mouse move");
-
-    //console.log(this.state.svgMouse)
-
     var point = this.relativeCoordinatesForEvent(mouseEvent);
     if (!this.state.isDrawing) {
       switch (this.state.tool) {
@@ -594,7 +566,7 @@ class DrawArea extends React.Component {
     }
   }
 
-  mouseDraggedToPoint(point) {
+  mouseDraggedToPoint(point) { //called when a point is being dragged around
     //turn off all parallel and perpindicular constraints
     // console.log(this.state.interLineConstraints);
     this.state.interLineConstraints.forEach(constraint => {
@@ -604,6 +576,7 @@ class DrawArea extends React.Component {
       } catch (e) {/*do nothing */}
     });
 
+    //turn off minimum distance constraints
     this.state.minManhattanConstraints.forEach(constraint => {
       try {
         this.solver.removeConstraint(constraint.ineq);
@@ -636,15 +609,11 @@ class DrawArea extends React.Component {
     let updateTheseConstraints = [];
     this.state.selectedPoints.forEach(sPoint => {
       let containingInterLineConstraints = this.findContainingInterLineConstraints(sPoint);
-
       containingInterLineConstraints.forEach(constraint => {
         this.updateConstraint(constraint, sPoint);
       });
-
       updateTheseConstraints = updateTheseConstraints.concat(containingInterLineConstraints);
-
     });
-
 
     //re-add constraints
     this.state.interLineConstraints.forEach(constraint => {
@@ -657,41 +626,12 @@ class DrawArea extends React.Component {
       this.setMinDist(constraint);
     });
 
-
     //resolve and re-render
     this.solver.resolve();
     this.setState({});
   }
 
-  setMinDist(constraint) {
-    let line = constraint.line;
-    let angle = constraint.angle;
-    let p1prime = this.getRotatedPoint(line.p1_, angle);
-    let p2prime = this.getRotatedPoint(line.p2_, angle);
-
-    var ineq;
-
-    // var ratio = Math.abs(p1prime.xval-p2prime.xval) / Math.abs(p1prime.yval-p2prime.yval);
-    // if (!(0.9 <= ratio || ratio >= 1.1)) {
-    //   return;
-    // }
-
-    if (p1prime.xval >= p2prime.xval && p1prime.yval >= p2prime.yval) {
-      ineq = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p1prime.y).minus(p2prime.y), c.GEQ, constraint.distance - EPS);
-    } else if (p2prime.xval >= p1prime.xval && p1prime.yval >= p2prime.yval) {
-      ineq = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p1prime.y).minus(p2prime.y), c.GEQ, constraint.distance - EPS);
-    } else if (p1prime.xval >= p2prime.xval && p2prime.yval >= p1prime.yval) {
-      ineq = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p2prime.y).minus(p1prime.y), c.GEQ, constraint.distance - EPS);
-    } else {
-      ineq = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p2prime.y).minus(p1prime.y), c.GEQ, constraint.distance - EPS);
-    }
-
-    //console.log(ineq);
-    constraint.ineq = ineq;
-    this.solver.addConstraint(ineq);
-  }
-
-  findContainingInterLineConstraints(point) {
+  findContainingInterLineConstraints(point) { //finds any constraints that contain this point
     let constraints = [];
     this.state.interLineConstraints.forEach(constraint => {
       if (constraint.line1.p1_ === point ||
@@ -704,20 +644,7 @@ class DrawArea extends React.Component {
     return constraints;
   }
 
-  findContainingPerpendicularConstraints(point) {
-    let constraints = [];
-    this.state.perpendicularConstraints.forEach(constraint => {
-      if (constraint.line1.p1_ === point ||
-          constraint.line1.p2_ === point ||
-          constraint.line2.p1_ === point ||
-          constraint.line2.p2_ === point) {
-            constraints.push(constraint);
-        }
-    });
-    return constraints;
-  }
-
-  updateConstraint(constraint, point) {
+  updateConstraint(constraint, point) { //recalculates angle of given constraint parallel/perpindicular
     //note: for perpindicular constraints, we must make sure the edited line becomes constraint.line1
     var line, isInverse, constr1, constr2;
     if (constraint.line1.p1_ === point || constraint.line1.p2_ === point) {
@@ -766,10 +693,6 @@ class DrawArea extends React.Component {
 
 //------------------------constraints------------------------
 
-
-  test() {
-  }
-
   makeCoincident() { //assumes selected is a point
     let points = this.state.selectedPoints;
     let pl = points.length;
@@ -810,57 +733,66 @@ class DrawArea extends React.Component {
     this.setState({});
   }
 
-  setDistance() {
-    let dist = 50; //TODO: ACTUALLY GET distance from textbox
+  setDistance() { //set the distance of all selected lines
+    let dist = parseInt(document.getElementById('length').value);
     this.state.shapes.forEach(shape => {
       if (shape.shape_ === 'line' && shape.selected) {
         this.setDistanceConstraint(dist, shape);
       }
     });
+    this.setState({});
   }
 
+  //helper function. sets numsteps number of manhattan distance constraints
   setDistanceConstraint(distance, line) {
-    let numsteps = 4;
+    let numsteps = 8;
     for (var angle = 0; angle <= 0.785398 /*45 deg*/; angle += (0.785398 / numsteps)) {
       this.setManhattanDistanceConstraint(distance, angle, line);
     }
   }
 
+  //helper function #2
   setManhattanDistanceConstraint(distance, angle, line) {
     let mDist = Math.sqrt(2*(distance**2));
     let p1prime = this.getRotatedPoint(line.p1_, angle);
     let p2prime = this.getRotatedPoint(line.p2_, angle);
 
-    //four LEQ constraints from absolute value constraints
+    //four LEQ constraints from absolute value constraint
     let ineq1 = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p1prime.y).minus(p2prime.y), c.LEQ, mDist + EPS);
     let ineq2 = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p1prime.y).minus(p2prime.y), c.LEQ, mDist + EPS);
     let ineq3 = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p2prime.y).minus(p1prime.y), c.LEQ, mDist + EPS);
     let ineq4 = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p2prime.y).minus(p1prime.y), c.LEQ, mDist + EPS);
     this.solver.addConstraint(ineq1).addConstraint(ineq2).addConstraint(ineq3).addConstraint(ineq4);
 
-    // //add LEQ constraint (this will ahve to be updated)
-    // let ineq5 = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p1prime.y).minus(p2prime.y), c.GEQ, distance - EPS, c.Strength.strong);
-    // let ineq6 = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p1prime.y).minus(p2prime.y), c.GEQ, distance - EPS, c.Strength.strong);
-    // let ineq7 = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p2prime.y).minus(p1prime.y), c.GEQ, distance - EPS, c.Strength.strong);
-    // let ineq8 = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p2prime.y).minus(p1prime.y), c.GEQ, distance - EPS, c.Strength.strong);
-    // this.solver.addConstraint(ineq5).addConstraint(ineq6).addConstraint(ineq7).addConstraint(ineq8);
-
     let constraint = {distance, angle, line};
     this.setMinDist(constraint);
 
-    // var ineq;
-    // if (p1prime.x.value >= p2prime.x && p1prime.y >= p2prime.y) {
-    //   ineq = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p1prime.y).minus(p2prime.y), c.GEQ, distance - EPS);
-    // } else if (p2prime.x.value >= p1prime.x && p1prime.y >= p2prime.y) {
-    //   ineq = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p1prime.y).minus(p2prime.y), c.GEQ, distance - EPS);
-    // } else if (p1prime.x.value >= p2prime.x && p2prime.y >= p1prime.y) {
-    //   ineq = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p2prime.y).minus(p1prime.y), c.GEQ, distance - EPS);
-    // } else {
-    //   ineq = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p2prime.y).minus(p1prime.y), c.GEQ, distance - EPS);
-    // }
-    // this.solver.addConstraint(ineq);
     let oldConstraints = this.state.minManhattanConstraints;
     oldConstraints.push(constraint);
+  }
+
+  setMinDist(constraint) {
+    let line = constraint.line;
+    let angle = constraint.angle;
+    let p1prime = this.getRotatedPoint(line.p1_, angle);
+    let p2prime = this.getRotatedPoint(line.p2_, angle);
+
+    var ineq;
+
+
+    if (p1prime.xval >= p2prime.xval && p1prime.yval >= p2prime.yval) {
+      ineq = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p1prime.y).minus(p2prime.y), c.GEQ, constraint.distance - EPS);
+    } else if (p2prime.xval >= p1prime.xval && p1prime.yval >= p2prime.yval) {
+      ineq = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p1prime.y).minus(p2prime.y), c.GEQ, constraint.distance - EPS);
+    } else if (p1prime.xval >= p2prime.xval && p2prime.yval >= p1prime.yval) {
+      ineq = new c.Inequality(p1prime.x.minus(p2prime.x).plus(p2prime.y).minus(p1prime.y), c.GEQ, constraint.distance - EPS);
+    } else {
+      ineq = new c.Inequality(p2prime.x.minus(p1prime.x).plus(p2prime.y).minus(p1prime.y), c.GEQ, constraint.distance - EPS);
+    }
+
+    //console.log(ineq);
+    constraint.ineq = ineq;
+    this.solver.addConstraint(ineq);
   }
 
   getRotatedPoint(cPoint, angle) {
@@ -881,67 +813,6 @@ class DrawArea extends React.Component {
 
   }
 
-  // setDistance(e, solver) {
-  //   var expr = function(a, b) {
-  //     return new c.Expression(a, b);
-  //   }
-  //
-  //   c.Expression.prototype.multiply = function(x) {
-  //     if (typeof x == 'number') {
-  //       return (this.clone()).multiplyMe(x);
-  //
-  //     } else if (x instanceof c.Variable) {
-  //       return this.clone().addVariable(x, 1);
-  //     } else if (x instanceof c.Expression) {
-  //       return this.clone().addExpression(x, 1);
-  //     } else {
-  //       if (this.isConstant) {
-  //         return x.times(this.constant);
-  //       } else if (x.isConstant) {
-  //         return this.times(x.constant);
-  //       } else {
-  //         throw new c.NonExpression();
-  //       }
-  //     }
-  //   };
-  //
-  //   var constant = function(val) {
-  //     var v = new c.Variable({ value : val });
-  //     v.isConstant = true;
-  //     return v;
-  //   }
-  //
-  //   // helper function for creating "point-point distance" constraints
-  //   var distance = function(p1, p2) {
-  //
-  //     var x = p1.x.value - p2.x.value;
-  //     var y = p1.y.value - p2.y.value;
-  //     var distanceSquared = x**2 + y**2;
-  //     console.log("distance", distanceSquared);
-  //
-  //     var dx = expr(p1.x).minus(p2.x);
-  //     var dy = expr(p1.y).minus(p2.y);
-  //
-  //     var vardist = dx.multiply(dx).plus(dy.multiply(dy));
-  //
-  //     var eq = new c.Equation(vardist, -distanceSquared);
-  //     solver.addConstraint(eq);
-  //
-  //     console.log(eq.toString())
-  //   };
-  //
-  //   let points = this.state.selectedPoints;
-  //   let pl = points.length;
-  //
-  //
-  //   if (pl === 2) {
-  //     //console.log("coincident!")
-  //     distance(points[0], points[1])
-  //   }
-  //   //re-render
-  //   this.setState({});
-  // }
-
   makeVertical() { //sets all selected lines to be vertical
     this.state.shapes.forEach(shape => {
       if (shape.shape_ === 'line' && shape.selected) {
@@ -961,6 +832,7 @@ class DrawArea extends React.Component {
     this.makeInterLineConstraint('perp');
   }
 
+  //makes two lines parallel or perpindicular
   makeInterLineConstraint(type) {
     if (!(type === 'par' || type === 'perp')) {
       return;
@@ -971,7 +843,7 @@ class DrawArea extends React.Component {
         selectedLines.push(shape);
       }
     });
-    if (selectedLines.length === 2) { //TODO: expand to more lines?
+    if (selectedLines.length === 2) {
       let line1 = selectedLines[0];
       let line2 = selectedLines[1];
       let ratio = (line1.p2_.y.value - line1.p1_.y.value) / (line1.p2_.x.value - line1.p1_.x.value);
@@ -1010,7 +882,8 @@ class DrawArea extends React.Component {
 
   }
 
-  makeAngleConstraint(line, ratio, inverse) { //TODO: MAKE THIS WORK FOR VERTICAL LINES
+  //helper function. sets a line to a fixed slope (ratio)
+  makeAngleConstraint(line, ratio, inverse) {
     if (inverse) {
       var exp1 = new c.Expression(line.p1_.y).times(ratio);
       var exp2 = new c.Expression(line.p2_.y).times(ratio);
@@ -1376,6 +1249,12 @@ class DrawArea extends React.Component {
         })
         this.setState( {shapes: unselectedShapes, newShapes:[]} );
         break;
+      case 66: //b
+        this.setState({tool:"BEZIER"});
+        break;
+      case 74: //j
+        this.setState({tool:"PAN"});
+        break;
       case 187: //+
         this.setState({tool:"ZOOMIN"})
         break;
@@ -1445,6 +1324,7 @@ class DrawArea extends React.Component {
     let width = 980;
     let height = 700;
 
+    //CSS styles
     let drawAreaStyle = {
       width: width,
       height: height,
@@ -1582,21 +1462,21 @@ class DrawArea extends React.Component {
 
         <ul style={toolbarStyle}>
           <li><b>Tools</b></li>
-          <li><button style={this.state.tool === "FREEHAND" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("FREEHAND")}>Freehand</button></li>
-          <li><button style={this.state.tool === "RECTANGLE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("RECTANGLE")}>Rectangle</button></li>
-          <li><button style={this.state.tool === "POLYLINE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("POLYLINE")}>Polyline</button></li>
-          <li><button style={this.state.tool === "BEZIER" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("BEZIER")}>Bezier</button></li>
-          <li><button style={this.state.tool === "SELECT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SELECT")}>Select</button></li>
-          <li><button style={this.state.tool === undefined ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickNoTool(e)}>No Tool</button></li>
+          <li><button style={this.state.tool === "FREEHAND" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("FREEHAND")}>Freehand (F)</button></li>
+          <li><button style={this.state.tool === "RECTANGLE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("RECTANGLE")}>Rectangle (E)</button></li>
+          <li><button style={this.state.tool === "POLYLINE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("POLYLINE")}>Polyline (P)</button></li>
+          <li><button style={this.state.tool === "BEZIER" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("BEZIER")}>Bezier (B)</button></li>
+          <li><button style={this.state.tool === "SELECT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SELECT")}>Select (A)</button></li>
+          <li><button style={this.state.tool === undefined ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickNoTool(e)}>No Tool (N)</button></li>
           <li style={{fontSize:14}}>Direct Transform</li>
-          <li style={{fontSize:14}}><button style={this.state.tool === "MOVE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("MOVE")}>Move</button>{this.state.translation ? `X: ${this.state.translation.x} Y: ${this.state.translation.y}` : null}</li>
-          <li style={{fontSize:14}}><button style={this.state.tool === "ROTATE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ROTATE")}>Rotate</button>{this.state.rotation ? `Angle: ${this.state.rotation}` : null} {this.state.rotation && <sup>o</sup>}</li>
-          <li style={{fontSize:14}}><button style={this.state.tool === "SCALE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SCALE")}>Scale</button>{this.state.scaleFactor ? `Factor: ${this.state.scaleFactor}` : null}</li>
+          <li style={{fontSize:14}}><button style={this.state.tool === "MOVE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("MOVE")}>Move (M)</button>{this.state.translation ? `X: ${this.state.translation.x} Y: ${this.state.translation.y}` : null}</li>
+          <li style={{fontSize:14}}><button style={this.state.tool === "ROTATE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ROTATE")}>Rotate (R)</button>{this.state.rotation ? `Angle: ${this.state.rotation}` : null} {this.state.rotation && <sup>o</sup>}</li>
+          <li style={{fontSize:14}}><button style={this.state.tool === "SCALE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SCALE")}>Scale (S)</button>{this.state.scaleFactor ? `Factor: ${this.state.scaleFactor}` : null}</li>
           <li style={{fontSize:14}}>View Tools</li>
-          <li><button style={this.state.tool === "PAN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("PAN")}>Pan</button></li>
+          <li><button style={this.state.tool === "PAN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("PAN")}>Pan (J)</button></li>
           <li>
-            <button style={this.state.tool === "ZOOMIN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMIN")}>Zoom In</button>
-            <button style={this.state.tool === "ZOOMOUT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMOUT")}>Zoom Out</button>
+            <button style={this.state.tool === "ZOOMIN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMIN")}>Zoom In (+)</button>
+            <button style={this.state.tool === "ZOOMOUT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMOUT")}>Zoom Out (-)</button>
           </li>
           <li style={{fontSize:14}}>
             Display Lengths:
@@ -1618,8 +1498,10 @@ class DrawArea extends React.Component {
           </li>
           <li>
             <button style={defaultButtonStyle} onClick={(e) => this.makeParallel(e)}>Parallel</button>
-            <button style={defaultButtonStyle} onClick={(e) => this.makePerpendicular(e)}>Perpendicular</button>
-            <button style={defaultButtonStyle} onClick={(e) => this.setDistance(e, this.solver)}>Distance</button>
+            <button style={defaultButtonStyle} onClick={(e) => this.makePerpendicular(e)}>Perpendicular</button> <br></br>
+            <button style={defaultButtonStyle} onClick={(e) => this.setDistance(e, this.solver)}>Length</button>
+            <label>length: </label>
+            <input type="text" id="length" style={{fontSize:14, width: "30px"}}/>
           </li>
           <li><b>File</b></li>
           <li>
