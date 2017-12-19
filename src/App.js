@@ -1354,6 +1354,9 @@ class DrawArea extends React.Component {
       case 66: //b
         this.setState({tool:"BEZIER"});
         break;
+      case 78: //n
+        this.setState({tool:"PAN"});
+        break;
       case 187: //+
         this.setState({tool:"ZOOMIN"})
         break;
@@ -1571,7 +1574,7 @@ class DrawArea extends React.Component {
           <li style={{fontSize:14}}><button style={this.state.tool === "ROTATE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ROTATE")}>Rotate (R)</button>{this.state.rotation ? `Angle: ${this.state.rotation}` : null} {this.state.rotation && <sup>o</sup>}</li>
           <li style={{fontSize:14}}><button style={this.state.tool === "SCALE" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("SCALE")}>Scale (S)</button>{this.state.scaleFactor ? `Factor: ${this.state.scaleFactor}` : null}</li>
           <li style={{fontSize:14}}>View Tools</li>
-          <li><button style={this.state.tool === "PAN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("PAN")}>Pan</button></li>
+          <li><button style={this.state.tool === "PAN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("PAN")}>Pan (N)</button></li>
           <li>
             <button style={this.state.tool === "ZOOMIN" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMIN")}>Zoom In (+)</button>
             <button style={this.state.tool === "ZOOMOUT" ? activeButtonStyle : inactiveButtonStyle} onClick={(e) => this.onClickTool("ZOOMOUT")}>Zoom Out (-)</button>
