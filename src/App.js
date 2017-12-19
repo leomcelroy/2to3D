@@ -308,6 +308,9 @@ class DrawArea extends React.Component {
           if (shape.selected) {
             //points = (shape.shape_ === "line") ? points.concat(shape.points()) : points.concat(shape.points());
             points = points.concat(shape.toLine());
+            // if (shape.shape_ === "bezier") {
+            //   points = points.concat(shape.points());
+            // }
           }
         })
 
