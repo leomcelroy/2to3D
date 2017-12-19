@@ -3,7 +3,7 @@ import {Line, Bezier, Freehand} from './Shape.js';
 import {ReactSVGPanZoom} from 'react-svg-pan-zoom';
 
 var c = require('cassowary');
-const EPS = 0.2;
+const EPS = 0.2; //buffer zone for distance constraint
 
 //----------helper functions----------
 const functionAverageX = (total, amount, index, array) => {
@@ -42,13 +42,13 @@ const functionGetAngle = (p1, p2) => {return Math.atan2(p2.y - p1.y, p2.x - p1.x
 
 //----------end of helper functions----------
 
+//-----------------Main app------------------
 class DrawArea extends React.Component {
   constructor() {
     super();
     this.state = {
       isDrawing: false,
       tool: undefined,
-      //lines: [], //will be a list of lists
       start: undefined,
       shapes: [], //will be a list of shapes
       selected: undefined, //will be whatever object is 'selected'
@@ -56,13 +56,12 @@ class DrawArea extends React.Component {
       pivotPoint: undefined,
       originalShapes: undefined,
       newShapes: [],
-      //selectedLines: [], //i think we don't need this
       selectedPoints: [],
       originalPoint: undefined,
       dragStart: undefined,
       onDragEndCallbacks: [],
       mouseDragged: false,
-      interLineConstraints: [],
+      interLineConstraints: [], //holds all parallel and perpindicular constraints
       svgMouse: undefined,
       workpieceSize: {x:500, y:500},
       clipboard: [],
@@ -73,9 +72,7 @@ class DrawArea extends React.Component {
       displayTransformations: true,
       displayLengths: "selected",
       minManhattanConstraints: [],
-
       solverPoints: [], //holds array of c.Point objects
-      //file: undefined,
     };
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -86,27 +83,20 @@ class DrawArea extends React.Component {
   }
 
   handleMouseDown(mouseEvent) {
-    //console.log("mouse down");
-
     this.setState({
       mousedown: true,
     });
-    if (mouseEvent.button !== 0) {
+    if (mouseEvent.button !== 0) { //only handle left-clicks
       return;
     }
     var point = this.relativeCoordinatesForEvent(mouseEvent);
     let oldShapes = this.state.shapes;
     var Shape = Line; //used to switch between polyline and bezier;
 
-
     switch (this.state.tool) {
       case "FREEHAND":
-
         let freehandCurve = new Freehand(point);
-
-
         oldShapes.push(freehandCurve);
-
         this.setState({
             shapes: oldShapes,
             isDrawing: true,
@@ -114,6 +104,7 @@ class DrawArea extends React.Component {
         break;
       case "BEZIER":
         Shape = Bezier; //turn on bezier drawing
+        //fallthrough. polylines and beziers are handled mostly the same
       case "POLYLINE":
         if (this.state.isDrawing) {
           let firstLine = this.state.firstPolyline;
@@ -123,8 +114,6 @@ class DrawArea extends React.Component {
 
           let closed = firstLine ? Math.abs(firstLine.toLine()[0].x - lastLine.toLine()[1].x) < 10 && Math.abs(firstLine.toLine()[0].y - lastLine.toLine()[1].y) < 10 : false;
           if (closed) {
-            console.log('closed');
-            //lastLine.deselect();
             this.solver.endEdit();
 
             let eq = new c.Equation(lastLine.p2_.x, new c.Expression(firstLine.p1_.x));
@@ -133,7 +122,7 @@ class DrawArea extends React.Component {
             this.solver.addConstraint(eq)
                        .addConstraint(eq2);
 
-            if (this.state.tool === 'BEZIER') {
+            if (this.state.tool === 'BEZIER') { //make adjacent control points colinear with endpoint in between
               let eqn = new c.Equation(firstLine.p1_.x, new c.Expression(firstLine.c1_.x).plus(lastLine.c2_.x).divide(2));
               let eqn2 = new c.Equation(firstLine.p1_.y, new c.Expression(firstLine.c1_.y).plus(lastLine.c2_.y).divide(2));
               this.solver.addConstraint(eqn).addConstraint(eqn2);
@@ -144,17 +133,11 @@ class DrawArea extends React.Component {
             this.setState({
               isDrawing: false,
             });
-          } else {
-            //lastLine.deselect();
+          } else {  //if not closed
             this.solver.endEdit();
 
             let line = new Shape(point, this.solver);
             let oldLine = oldShapes[oldShapes.length - 1];
-
-            //add coincident constraint
-            // console.log("old x:", oldLine.p2_.x.value , "new x:",line.p1_.x.value);
-            // console.log("old y:", oldLine.p2_.y.value , "new y:",line.p1_.y.value);
-
 
             line.addEditVars(this.solver);
             this.solver.beginEdit();
@@ -169,7 +152,7 @@ class DrawArea extends React.Component {
             this.solver.addConstraint(eq)
                        .addConstraint(eq2);
 
-            if (this.state.tool === 'BEZIER') {
+            if (this.state.tool === 'BEZIER') { //make adjacent control points colinear with endpoint in between
                let eqn = new c.Equation(line.p1_.x, new c.Expression(line.c1_.x).plus(oldLine.c2_.x).divide(2));
                let eqn2 = new c.Equation(line.p1_.y, new c.Expression(line.c1_.y).plus(oldLine.c2_.y).divide(2));
                 this.solver.addConstraint(eqn).addConstraint(eqn2);
@@ -181,7 +164,7 @@ class DrawArea extends React.Component {
               shapes: oldShapes,
             });
           }
-        } else {
+        } else { //if not already drawing:
           let line = new Shape(point, this.solver);
           console.log(line);
 
@@ -253,7 +236,7 @@ class DrawArea extends React.Component {
         //click and drag
         let anySelected = false;
         this.state.shapes.forEach((shape) => {
-          let callback = shape.selectedObjectAt(point);
+          let callback = shape.selectedObjectAt(point);  //these are callbacks that should be run on mouseup
           console.log(callback);
           if (callback) {
             let oldCallbacks = this.state.onDragEndCallbacks;
@@ -343,21 +326,10 @@ class DrawArea extends React.Component {
   }
 
   relativeCoordinatesForEvent(mouseEvent) {
-    //const boundingRect = this.refs.drawArea.getBoundingClientRect();
-    //console.log(mouseEvent.point);
-    // return {
-    //   x: mouseEvent.clientX - boundingRect.left,
-    //   y: mouseEvent.clientY - boundingRect.top,
-    // };
-
     return (this.state.svgMouse);
   }
 
   handleMouseMove(mouseEvent) {
-    //console.log("mouse move");
-
-    //console.log(this.state.svgMouse)
-
     var point = this.relativeCoordinatesForEvent(mouseEvent);
     if (!this.state.isDrawing) {
       switch (this.state.tool) {
