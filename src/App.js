@@ -182,7 +182,7 @@ class DrawArea extends React.Component {
             });
         }
         break;
-      case "RECTANGLE": //TODO: update to lines
+      case "RECTANGLE": //created using lines with constraints
         let line1 = new Line(point, this.solver);
         let line2 = new Line(point, this.solver);
         let line3 = new Line(point, this.solver);
@@ -306,7 +306,6 @@ class DrawArea extends React.Component {
           originalShapes.push(newShape);
 
           if (shape.selected) {
-            //points = (shape.shape_ === "line") ? points.concat(shape.points()) : points.concat(shape.points());
             points = points.concat(shape.toLine());
           }
         })
@@ -325,7 +324,7 @@ class DrawArea extends React.Component {
 
   }
 
-  relativeCoordinatesForEvent(mouseEvent) {
+  relativeCoordinatesForEvent(mouseEvent) { //for getting position of mouse in drawing area
     return (this.state.svgMouse);
   }
 
@@ -351,7 +350,7 @@ class DrawArea extends React.Component {
 
             if (this.state.displayTransformations) {this.setState({translation:{x:xTranslation, y:yTranslation}});}
 
-            this.state.originalShapes.forEach((shape) => {
+            this.state.originalShapes.forEach((shape) => { //translates points by movement of mouse
               if (shape.selected) {
                 let newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
 
@@ -375,10 +374,10 @@ class DrawArea extends React.Component {
           }
           break;
         case "ROTATE":
-          const functionRotate = (angle, pivot, shape) => {
+          const functionRotate = (angle, pivot, shape) => { //rotates points around a pivot by some angle
             let newShape = Object.assign( Object.create( Object.getPrototypeOf(shape)), shape);
 
-            let newPoints = newShape.toLine().map(shapePoint => { //TODO: fix for lines to points()
+            let newPoints = newShape.toLine().map(shapePoint => {
 
               let distanceToPivot = distance(shapePoint, pivot);
               let angleWithPivot = functionGetAngle(shapePoint, pivot);
@@ -387,7 +386,6 @@ class DrawArea extends React.Component {
               let newPoint = {x:pivot.x+Math.cos(delta)*distanceToPivot, y:pivot.y+Math.sin(delta)*distanceToPivot};
               //console.log(angleWithPivot);
 
-              //let newPoint = {x:100, y:100};
               return newPoint;
             })
 
@@ -540,8 +538,8 @@ class DrawArea extends React.Component {
         this.solver.endEdit();
         this.setState({ isDrawing: false });
         break;
-      case "ROTATE": // fall-through, or statement doesn't work
-      case "SCALE":
+      case "ROTATE": // fall-through
+      case "SCALE": // fall-through
       case "MOVE":
         this.setState({
           translation:undefined,
@@ -908,7 +906,7 @@ class DrawArea extends React.Component {
 
 //------------------------------------------------
 
-  copy(e) { //TODO: doesnt work with cPoints
+  copy(e) { //copies selected shapes
     let newClipboard = [];
     this.state.shapes.forEach(shape => {
       if (shape.selected) {
@@ -922,7 +920,7 @@ class DrawArea extends React.Component {
     // console.log("clipboard",this.state.clipboard);
   }
 
-  paste(e) {
+  paste(e) { //pastes copied shapes, deselects old selection, selects newly pasted shapes
     let oldShapes = this.state.shapes;
     let copied = this.state.clipboard;
     let newShapes = [];
@@ -960,7 +958,7 @@ class DrawArea extends React.Component {
     console.log(this.state.shapes);
   }
 
-  handleDownload(e) {
+  handleDownload(e) { //downloads .svg of current drawing
     e.preventDefault();
     let filename = document.getElementById('downloadName').value;
     if (filename === "") { filename = "noName"};
@@ -968,12 +966,9 @@ class DrawArea extends React.Component {
 
     let shapeArray = this.state.shapes;
 
-
-    //lineArray = lineArray.concat(this.state.lines);
-
-
-    let svgString = this.state.shapes.map(shape => `<path d="${shape.getPathData()}" stroke-linejoin="round" stroke-linecap="round" stroke-width="1px" stroke="black" fill="none"/>`);
-
+    let svgString = this.state.shapes.map(
+      shape => `<path d="${shape.getPathData()}" stroke-linejoin="round" stroke-linecap="round" stroke-width="1px" stroke="black" fill="none"/>`
+    );
 
     let text = `<svg
       width="${this.state.workpieceSize.x}"
@@ -996,7 +991,7 @@ class DrawArea extends React.Component {
     }
   }
 
-  handleSave(e) {
+  handleSave(e) { //downloads text file which can be uploaded into 2to3D to recreate drawing
     e.preventDefault();
     let filename = document.getElementById('saveName').value;
     if (filename === "") { filename = "noName"};
@@ -1006,10 +1001,6 @@ class DrawArea extends React.Component {
     console.log("pure state", state);
     let text = JSON.stringify(state);
     console.log("impure state", text);
-
-    // console.log(state);
-    // console.log(text);
-    // console.log(Object.getOwnPropertyNames(state.shapes[0]))
 
     var pom = document.createElement('a');
     pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
@@ -1025,7 +1016,7 @@ class DrawArea extends React.Component {
     }
   }
 
-  handleUpload(e) { //only works for POLYLINEs -shapes- now, needs to maintain constraints as well
+  handleUpload(e) { //recreates drawing stored in saved text file, TODO: needs to maintain constraints as well
     e.preventDefault();
     let files = e.target.files;
     let file = files[0];
@@ -1058,7 +1049,6 @@ class DrawArea extends React.Component {
 
           newShape = Object.assign( Object.create( Object.getPrototypeOf(newShape)), oldShape); //this is so we maintain class methods
 
-          // console.log("points", newShape.p1_._x, newShape.p2_._x)
           if (newShape.shape_ === "line") {
             newShape.p1_ = new c.Point(newShape.p1_._x.value, newShape.p1_._y.value);
             newShape.p2_ = new c.Point(newShape.p2_._x.value, newShape.p2_._y.value);
@@ -1080,8 +1070,7 @@ class DrawArea extends React.Component {
           return newShape
         })
 
-        //console.log("newShapes", newShapes);
-
+        //need to re-initialize state
         this.setState({
           isDrawing: false,
           tool: undefined,
@@ -1135,14 +1124,13 @@ class DrawArea extends React.Component {
     //this.setState(loadedFileIntoState[0]);
   }
 
-  updateSVGMouse(event) {
+  updateSVGMouse(event) { //for tracking mouse position
     this.setState({
       svgMouse : {x:event.x, y:event.y}
     })
-    //console.log(this.state.svgMouse);
   }
 
-  setWorkpieceSize(e) {
+  setWorkpieceSize(e) { //sets dimensions of workpiece
     e.preventDefault();
     let width = parseInt(document.getElementById('width').value);
     let height = parseInt(document.getElementById('height').value);
@@ -1154,13 +1142,13 @@ class DrawArea extends React.Component {
     }
   }
 
-  handleTransformCheckbox(e) {
+  handleTransformCheckbox(e) { //controls checkbox display options for values of transformations
     let newState = !this.state.displayTransformations;
 
     this.setState({displayTransformations:newState})
   }
 
-  handleDropdownDisplayMenu(e) {
+  handleDropdownDisplayMenu(e) { //controls dropdown menu display options for values of transformations
     var e = document.getElementById("handleDropdownDisplayMenu");
     var value = e.options[e.selectedIndex].value;
     var text = e.options[e.selectedIndex].text;
@@ -1422,6 +1410,7 @@ class DrawArea extends React.Component {
         break;
     }
 
+    //main render of program
     return (
       <div
         style={{

@@ -1,13 +1,6 @@
 
 \section{Related Work}
 
-%Provide a review of prior work that is similar to yours. Who else has
-%solved/researched this problem or similar problems? What was their approach?
-%How is your research new and different? Here you can describe shortcomings in
-%previous work that your work complements and or improves upon. This section
-%should be approximately 0.5-1 page in length depending on the amount of related
-%work.
-
 There are a number of CAD programs created by commercial enterprises and hobbyists that incorporate some of the features valuable for creating laser cutter designs. The goal of 2to3D is to integrate these features into one program. Below we highlight some programs that exemplify notable features or designs:
 
 \begin{itemize}
@@ -17,3 +10,5 @@ There are a number of CAD programs created by commercial enterprises and hobbyis
   \item \textbf{SolveSpace}: A 2D/3D parametric CAD program created by Jonathan Westhues. Solvespace is an impressive recreational project. The most impressive feature is perhaps the robust and efficient geometric constraint solver. In SolveSpace constraints are represented as equations in a symbolic algebra system. Generally, these equations are solved numerically, by a modified Newton's method. If the sketch is not fully constrained, then the Jacobian is solved in a least squares method, meaning each equation is written in such a way as to minimize a useful penalty metric \cite{solvespace} \cite{solvespace2}. The issue with SolveSpace is that it requires the user to download and compile the program before use. SolveSpace supports 3D-mesh design which means it incorporates many unnecessary features for a user interested solely in laser cutting.
   \item \textbf{jSketcher}: A parametric 2D and 3D modeler written in pure javascript, and developed mostly by Val Erastov. The goal of jSketcher is to produce parametric CAD software for the web. The issue with jSketcher is similar to SolveSpace, because it supports both 2D and 3D modeling it incorporates a myriad of features that obfuscate the essential workflow for laser cutting \cite{jsketcher}.
 \end{itemize}
+
+2to3D is differentiated from the projects above because it does not incorporate tools for creating or working with 3D meshes meaning it strictly supports 2D designs, it is free and open-source, it is web-based, it allows the user to retain complete control over data produced using the program, and it incorporates a geometric constraint solver to support parametric modeling. Ultimately, 2to3D will also incorporate tools for creating images/importing rasters which can be used for engraving. With this functionality 2to3D will support a truly unique set capabilities among the programs described.

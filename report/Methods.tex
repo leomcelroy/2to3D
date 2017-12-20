@@ -1,6 +1,6 @@
 \section{Methods}
 
-There were two main parts of 2to3D we needed to implement: the user interface and the geometric constraint solver. For each of these tasks, we employed a different library, with lots of JavaScript code glueing them together.
+There were two main parts of 2to3D we needed to implement: the user interface and the geometric constraint solver. For each of these tasks, we employed a different library, with lots of JavaScript code gluing them together.
 
 \subsection*{User Interface with React.js}
 
@@ -23,7 +23,7 @@ Freehand curves are simply SVG paths, but within Line and Bezier objects are poi
 \begin{itemize}
 \item {\bf Freehand:} Simply draws a freehand curve following the cursor.
 \item {\bf Polyline:} Creates lines where adjacent endpoints are constrained to be coincident, optionally allowing the user to close the polyline where it started, creating a polygon.
-\item {\bf Bezier:} Creates bezier curves whose adjacent endpoints are constrainted to be coincident and adjacent control points are constrained to be collinear with the endpoint between them.
+\item {\bf Bezier:} Creates bezier curves whose adjacent endpoints are constrained to be coincident and adjacent control points are constrained to be collinear with the endpoint between them.
 \item {\bf Rectangle:} Creates four lines in a rectangle where the top and bottom lines are constrained to be horizontal and the left and right lines are constrained to be vertical.
 \end{itemize}
 
@@ -77,28 +77,12 @@ Below are the geometric constraints we implemented, along with a description of 
 \label{dist3}
 \end{figure}
 
-The full implementation can be found at TODO LINK.
+\subsection*{Direct Transformations}
 
+2to3D implements three direct transformations: move, scale, and rotate. These tools allow users to specify geometry which will not be modified by the geometric constraint solver while being transformed. This is done by creating a new set of points at the respective locations of the points that compose the selected shapes. These points are then mapped to new locations through a $x-$/$y-$ translation function, a rotation function, or a scale function. Finally the original shapes are deleted leaving only the newly transformed shapes.
 
+The transformation function translates all points by the displacement of the mouse from the initial selection point. The rotation function rotates all points around a centroid (pivot point) by the angle formed by the line which passes through the initial selection point and the pivot and the line which passes through the current cursor point and the pivot. The scale function works by forming a circle with radius equal to the distance between the initial selection point and the pivot. As the cursor is dragged farther from the pivot outside the circle the selected shapes are scaled up. As the cursor is dragged closer to the pivot inside the circle the selected shapes are scaled down.
 
+\subsection*{Link to GitHub Repository}
 
-
-\begin{comment}
-This section should include the following:
-\begin{itemize}
-		
-\item	A description of the methods you are using (which itself could have
-	sub-sections). If you have created a new application, you should describe
-	which tools you have used to do so and the steps of your implementation. You
-	should also briefly describe each of the tools you used (e.g. Ruby on Rails,
-	MongoDB, D3, etc.). If you have proposed a new algorithm to solve a problem,
-	you should provide the details of your algorithm along with pseudocode. If
-	your algorithm is quite complex, you should describe its running time.  
-
-\item Description of any data you used and explanation of why you chose this
-	particular data (possibly organized into sub-sections).
-
-\item Link to a GitHub, BitBucket or other repository if relevant.
-
-\end{itemize}
-\end{comment}
+The full implementation can be found at \url{https://github.com/leomcelroy/2to3D}.
