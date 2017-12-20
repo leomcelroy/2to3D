@@ -1482,7 +1482,7 @@ class DrawArea extends React.Component {
           <li>
             <button style={defaultButtonStyle} onClick={(e) => this.makeParallel(e)}>Parallel</button>
             <button style={defaultButtonStyle} onClick={(e) => this.makePerpendicular(e)}>Perpendicular</button> <br></br>
-            <button style={defaultButtonStyle} onClick={(e) => this.setDistance(e, this.solver)}>Length</button>
+            <button style={defaultButtonStyle} onClick={(e) => this.setDistance(e, this.solver)}>Length (beta)</button>
             <label>length: </label>
             <input type="text" id="length" style={{fontSize:14, width: "30px"}}/>
           </li>
