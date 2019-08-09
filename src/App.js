@@ -6,28 +6,24 @@ var c = require('cassowary');
 const EPS = 0.2; //buffer zone for distance constraint
 
 //----------helper functions----------
-const functionAverageX = (total, amount, index, array) => {
+
+const coordAverage = (total, amount, index, array, isXCoord) => {
   if (index === 1) {
-    total = total.x;
+    total = isXCoord ? total.x : total.y;
   }
-  total += amount.x;
+  total += isXCoord ? amount.x : amount.y;
   if( index === array.length-1 ) {
     return total/array.length;
   } else {
     return total;
   }
 };
+const functionAverageX = (total, amount, index, array) => {
+  return coordAverage(total, amount, index, array, true);
+};
 
 const functionAverageY = (total, amount, index, array) => {
-  if (index === 1) {
-    total = total.y;
-  }
-  total += amount.y;
-  if( index === array.length-1 ) {
-    return total/array.length;
-  }else {
-    return total;
-  }
+  return coordAverage(total, amount, index, array, false);
 };
 
 const distanceSquared = (p1, p2) => {
@@ -35,7 +31,7 @@ const distanceSquared = (p1, p2) => {
 }
 
 const distance = (p1, p2) => {
-  return Math.sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2);
+  return Math.sqrt(distanceSquared(p1, p2));
 }
 
 const functionGetAngle = (p1, p2) => {return Math.atan2(p2.y - p1.y, p2.x - p1.x);}
