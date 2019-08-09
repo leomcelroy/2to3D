@@ -11,7 +11,7 @@ const coordAverage = (total, amount, index, array, isXCoord) => {
   if (index === 1) {
     total = isXCoord ? total.x : total.y;
   }
-  total += isXCoord ? amount.x : amount.y
+  total += isXCoord ? amount.x : amount.y;
   if( index === array.length-1 ) {
     return total/array.length;
   } else {
